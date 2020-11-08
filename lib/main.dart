@@ -18,7 +18,26 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: Home(),
+      home: Test(),
+    );
+  }
+}
+
+class Test extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('test'),
+      ),
+      body: TextButton(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return Home();
+          }));
+        },
+        child: Text('jump'),
+      ),
     );
   }
 }
@@ -58,11 +77,11 @@ class MyBuilder extends ExpendableBuilder {
 
   @override
   int getSectionCount() {
-    return 10;
+    return 3;
   }
 
   @override
   int getSectionItemCount(int sectionIndex) {
-    return 20;
+    return 2;
   }
 }

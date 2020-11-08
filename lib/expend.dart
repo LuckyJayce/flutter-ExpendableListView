@@ -80,6 +80,7 @@ class Accountant {
   void update() {
     count = 0;
     map.clear();
+    sectionDataList.clear();
     int sectionCount = builder.getSectionCount();
     for (int s = 0; s < sectionCount; s++) {
       int itemCount = builder.getSectionItemCount(s);
