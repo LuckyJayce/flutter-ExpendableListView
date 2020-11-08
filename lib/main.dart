@@ -51,7 +51,9 @@ class MyBuilder extends ExpendableBuilder {
 
   @override
   Widget buildSectionItem(int section, int itemIndex) {
-    return Text('item $section - $itemIndex');
+    return ListTile(
+      title: Text('item $section - $itemIndex'),
+    );
   }
 
   @override
@@ -61,11 +63,6 @@ class MyBuilder extends ExpendableBuilder {
 
   @override
   int getSectionItemCount(int sectionIndex) {
-    return 10;
-  }
-
-  @override
-  bool isExpend(int section) {
-    return false;
+    return 1000;
   }
 }
