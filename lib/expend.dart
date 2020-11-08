@@ -53,16 +53,9 @@ class _ExpendableListViewState extends State<ExpendableListView> {
                           !accountant.isSectionExpanded(itemInfo.sectionIndex);
                     });
                   },
-                  child: new StickyHeaderBuilder(
-                    overlapHeaders: true,
-                    builder: (BuildContext context, double stuckAmount) {
-                      stuckAmount = 1.0 - stuckAmount.clamp(0.0, 1.0);
-                      return widget.builder.buildSectionHeader(
-                          itemInfo.sectionIndex,
-                          accountant.isSectionExpanded(itemInfo.sectionIndex));
-                    },
-                    content: Container(),
-                  ),
+                  child: widget.builder.buildSectionHeader(
+                      itemInfo.sectionIndex,
+                      accountant.isSectionExpanded(itemInfo.sectionIndex)),
                 );
               }
               return widget.builder
