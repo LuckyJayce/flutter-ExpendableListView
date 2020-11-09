@@ -8,9 +8,16 @@ import 'src/item_positions_listener.dart';
 import 'src/scrollable_positioned_list.dart';
 
 class ExpendableListView extends StatefulWidget {
-  final ExpendableBuilder builder;
+  final SectionHeaderBuilder headerBuilder;
+  final SectionCount sectionCount;
+  final SectionChildBuilder childBuilder;
+  final SectionChildrenCount sectionChildrenCount;
 
-  ExpendableListView({this.builder});
+  ExpendableListView(
+      {this.headerBuilder,
+      this.sectionCount,
+      this.childBuilder,
+      this.sectionChildrenCount});
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
@@ -24,7 +31,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   @override
   void initState() {
     super.initState();
-    accountant = Accountant(widget.builder);
+    accountant = Accountant(widget.sectionCount, widget.sectionChildrenCount);
   }
 
   @override
@@ -48,8 +55,8 @@ class _ExpendableListViewState extends State<ExpendableListView> {
               return _buildHeader(index, itemInfo.sectionIndex,
                   accountant.isSectionExpanded(itemInfo.sectionIndex));
             }
-            return widget.builder
-                .buildSectionItem(itemInfo.sectionIndex, itemInfo.itemIndex);
+            return widget.childBuilder(
+                itemInfo.sectionIndex, itemInfo.itemIndex);
           },
           itemCount: accountant.count,
         ),
@@ -69,19 +76,25 @@ class _ExpendableListViewState extends State<ExpendableListView> {
         });
         itemScrollController.jumpTo(index: index);
       },
-      child: widget.builder.buildSectionHeader(sectionIndex, expend),
+      child: widget.headerBuilder(index, sectionIndex, expend),
     );
   }
 }
 
-typedef StickHeaderBuilder = Widget Function(
-    int index, int sectionIndexm, bool expend);
+typedef SectionCount = int Function();
+typedef SectionChildrenCount = int Function(int sectionIndex);
+typedef SectionHeaderBuilder = Widget Function(
+    int index, int sectionIndex, bool expend);
+typedef SectionChildBuilder = Widget Function(
+    int sectionIndex, int sectionChildIndex);
 
 class Accountant {
-  ExpendableBuilder builder;
+  SectionCount sectionCount;
+  SectionChildrenCount sectionChildCount;
+
   List<int> sectionDataList = [];
 
-  Accountant(this.builder);
+  Accountant(this.sectionCount, this.sectionChildCount);
 
   Map<int, bool> expends = {};
   int count;
@@ -91,12 +104,12 @@ class Accountant {
     count = 0;
     map.clear();
     sectionDataList.clear();
-    int sectionCount = builder.getSectionCount();
-    for (int s = 0; s < sectionCount; s++) {
-      int itemCount = builder.getSectionItemCount(s);
+    int sc = sectionCount();
+    for (int s = 0; s < sc; s++) {
+      int childCount = sectionChildCount(s);
       sectionDataList.add(count);
       if (isSectionExpanded(s)) {
-        count += itemCount + 1;
+        count += childCount + 1;
       } else {
         count += 1;
       }
@@ -151,7 +164,7 @@ class ItemInfo {
 
 class StickHeader extends StatefulWidget {
   final ItemPositionsListener itemPositionsListener;
-  final StickHeaderBuilder builder;
+  final SectionHeaderBuilder builder;
   final Accountant accountant;
 
   StickHeader(this.itemPositionsListener, this.builder, this.accountant);
@@ -236,16 +249,6 @@ class _StickHeaderState extends State<StickHeader> {
   }
 }
 
-abstract class ExpendableBuilder {
-  int getSectionCount();
-
-  Widget buildSectionHeader(int section, bool expend);
-
-  int getSectionItemCount(int sectionIndex);
-
-  Widget buildSectionItem(int section, int itemIndex);
-}
-
 typedef Expend = Function(int sectionIndex, bool expend);
 
 //TODO
@@ -254,6 +257,5 @@ class ExpandableListController {
     return false;
   }
 
-  void setSectionExpanded(int sectionIndex, bool expanded) {
-  }
+  void setSectionExpanded(int sectionIndex, bool expanded) {}
 }

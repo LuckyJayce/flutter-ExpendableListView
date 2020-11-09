@@ -52,37 +52,18 @@ class _HomeState extends State<Home> {
     return Scaffold(
       appBar: AppBar(title: Text('home')),
       body: ExpendableListView(
-        builder: MyBuilder(),
+        sectionCount: () => 10,
+        sectionChildrenCount: (sectionIndex) => 20,
+        headerBuilder: (index, sectionIndex, expend) => Container(
+          decoration: BoxDecoration(color: Colors.grey),
+          child: ListTile(
+            title: Text('section:$sectionIndex'),
+          ),
+        ),
+        childBuilder: (sectionIndex, childIndex) => ListTile(
+          title: Text('item $sectionIndex - $childIndex'),
+        ),
       ),
     );
-  }
-}
-
-class MyBuilder extends ExpendableBuilder {
-  @override
-  Widget buildSectionHeader(int section, bool expend) {
-    return Container(
-      decoration: BoxDecoration(color: Colors.grey),
-      child: ListTile(
-        title: Text('section:$section'),
-      ),
-    );
-  }
-
-  @override
-  Widget buildSectionItem(int section, int itemIndex) {
-    return ListTile(
-      title: Text('item $section - $itemIndex'),
-    );
-  }
-
-  @override
-  int getSectionCount() {
-    return 10;
-  }
-
-  @override
-  int getSectionItemCount(int sectionIndex) {
-    return 20;
   }
 }
