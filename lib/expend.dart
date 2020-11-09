@@ -18,6 +18,7 @@ class ExpendableListView extends StatefulWidget {
 
 class _ExpendableListViewState extends State<ExpendableListView> {
   ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
+  ItemScrollController itemScrollController = ItemScrollController();
   Accountant accountant;
 
   @override
@@ -39,11 +40,12 @@ class _ExpendableListViewState extends State<ExpendableListView> {
       children: [
         ScrollablePositionedList.builder(
           // 只有设置了1.0 才能够准确的标记position 位置
+          itemScrollController: itemScrollController,
           itemPositionsListener: itemPositionsListener,
           itemBuilder: (BuildContext context, int index) {
             ItemInfo itemInfo = accountant.compute(index);
             if (itemInfo.isSectionHeader) {
-              return _buildHeader(itemInfo.sectionIndex,
+              return _buildHeader(index, itemInfo.sectionIndex,
                   accountant.isSectionExpanded(itemInfo.sectionIndex));
             }
             return widget.builder
@@ -58,20 +60,22 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     );
   }
 
-  Widget _buildHeader(int sectionIndex, bool expend) {
+  Widget _buildHeader(int index, int sectionIndex, bool expend) {
     return GestureDetector(
       onTap: () {
         setState(() {
           accountant.expends[sectionIndex] =
               !accountant.isSectionExpanded(sectionIndex);
         });
+        itemScrollController.jumpTo(index: index);
       },
       child: widget.builder.buildSectionHeader(sectionIndex, expend),
     );
   }
 }
 
-typedef StickHeaderBuilder = Widget Function(int sectionIndexm, bool expend);
+typedef StickHeaderBuilder = Widget Function(
+    int index, int sectionIndexm, bool expend);
 
 class Accountant {
   ExpendableBuilder builder;
@@ -172,7 +176,7 @@ class _StickHeaderState extends State<StickHeader> {
     if (itemInfo != null) {
       return DisplayWidget(
         headerDisplayHeight: headerDisplayHeight,
-        child: widget.builder(itemInfo.sectionIndex,
+        child: widget.builder(itemPosition.index, itemInfo.sectionIndex,
             widget.accountant.isSectionExpanded(itemInfo.sectionIndex)),
         // child: Container(
         //   decoration: BoxDecoration(color: Colors.blue),
