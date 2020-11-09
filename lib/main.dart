@@ -77,11 +77,11 @@ class MyBuilder extends ExpendableBuilder {
 
   @override
   int getSectionCount() {
-    return 3;
+    return 10;
   }
 
   @override
   int getSectionItemCount(int sectionIndex) {
-    return 2;
+    return 10;
   }
 }

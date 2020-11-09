@@ -3,7 +3,6 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:sticky_headers/sticky_headers.dart';
 
 class ExpendableListView extends StatefulWidget {
   final ExpendableBuilder builder;
@@ -48,7 +47,6 @@ class _ExpendableListViewState extends State<ExpendableListView> {
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      print('click');
                       accountant.expends[itemInfo.sectionIndex] =
                           !accountant.isSectionExpanded(itemInfo.sectionIndex);
                     });
@@ -94,10 +92,10 @@ class Accountant {
   }
 
   ItemInfo compute(int index) {
-    ItemInfo info = map[index];
-    if (info != null) {
-      return info;
-    }
+    // ItemInfo info = map[index];
+    // if (info != null) {
+    //   return info;
+    // }
     int sectionIndex = 0;
     bool isSectionHeader = false;
     for (int s = 0; s < sectionDataList.length; s++) {
@@ -134,75 +132,6 @@ class ItemInfo {
   ItemInfo(this.isSectionHeader, this.sectionIndex, this.itemIndex);
 }
 
-class _SaltedValueKey extends ValueKey<Key> {
-  const _SaltedValueKey(Key key)
-      : assert(key != null),
-        super(key);
-}
-
-class MyChildrenDelegate extends SliverChildBuilderDelegate {
-  MyChildrenDelegate(
-    Widget Function(BuildContext, int) builder, {
-    int childCount,
-    bool addAutomaticKeepAlive = true,
-    bool addRepaintBoundaries = true,
-  }) : super(builder,
-            childCount: childCount,
-            addAutomaticKeepAlives: addAutomaticKeepAlive,
-            addRepaintBoundaries: addRepaintBoundaries);
-
-  // Return a Widget for the given Exception
-  Widget _createErrorWidget(dynamic exception, StackTrace stackTrace) {
-    final FlutterErrorDetails details = FlutterErrorDetails(
-      exception: exception,
-      stack: stackTrace,
-      library: 'widgets library',
-      context: ErrorDescription('building'),
-    );
-    FlutterError.reportError(details);
-    return ErrorWidget.builder(details);
-  }
-
-  @override
-  Widget build(BuildContext context, int index) {
-    assert(builder != null);
-    if (index < 0 || (childCount != null && index >= childCount)) return null;
-    Widget child;
-    try {
-      child = builder(context, index);
-    } catch (exception, stackTrace) {
-      child = _createErrorWidget(exception, stackTrace);
-    }
-    if (child == null) return null;
-    final Key key = child.key != null ? _SaltedValueKey(child.key) : null;
-    if (addRepaintBoundaries) child = RepaintBoundary(child: child);
-    if (addSemanticIndexes) {
-      final int semanticIndex = semanticIndexCallback(child, index);
-      if (semanticIndex != null)
-        child = IndexedSemantics(
-            index: semanticIndex + semanticIndexOffset, child: child);
-    }
-    if (addAutomaticKeepAlives) child = AutomaticKeepAlive(child: child);
-    return KeyedSubtree(child: child, key: key);
-  }
-
-  @override
-  void didFinishLayout(int firstIndex, int lastIndex) {
-    super.didFinishLayout(firstIndex, lastIndex);
-  }
-
-  ///监听 在可见的列表中 显示的第一个位置和最后一个位置
-  @override
-  double estimateMaxScrollOffset(int firstIndex, int lastIndex,
-      double leadingScrollOffset, double trailingScrollOffset) {
-    print(
-        'firstIndex sss : $firstIndex, lastIndex ssss : $lastIndex, leadingScrollOffset ssss : $leadingScrollOffset,'
-        'trailingScrollOffset ssss : $trailingScrollOffset  ');
-    return super.estimateMaxScrollOffset(
-        firstIndex, lastIndex, leadingScrollOffset, trailingScrollOffset);
-  }
-}
-
 class StickHeader extends StatefulWidget {
   final ItemPositionsListener itemPositionsListener;
   final ExpendableBuilder builder;
@@ -215,37 +144,51 @@ class StickHeader extends StatefulWidget {
 }
 
 class _StickHeaderState extends State<StickHeader> {
+  ItemPosition itemPosition;
+  ItemInfo itemInfo;
+
   @override
   void initState() {
-    widget.itemPositionsListener.itemPositions.addListener(positionChange);
+    widget.itemPositionsListener.itemPositions.addListener(onPositionChange);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.itemPositionsListener.itemPositions.value.isEmpty) {
-      return Container();
-    }
-    ItemPosition itemPosition =
-        widget.itemPositionsListener.itemPositions.value.first;
-    if (itemPosition != null) {
-      int index = itemPosition.index;
-      ItemInfo info = widget.accountant.compute(index);
-      Widget w = widget.builder.buildSectionHeader(info.sectionIndex,
-          widget.accountant.isSectionExpanded(info.sectionIndex));
-      return w ?? Container();
+    if (itemInfo != null) {
+      return widget.builder.buildSectionHeader(itemInfo.sectionIndex,
+          widget.accountant.isSectionExpanded(itemInfo.sectionIndex));
     }
     return Container();
   }
 
   @override
   void dispose() {
-    widget.itemPositionsListener.itemPositions.removeListener(positionChange);
+    widget.itemPositionsListener.itemPositions.removeListener(onPositionChange);
     super.dispose();
   }
 
-  void positionChange() {
-    setState(() {});
+  void onPositionChange() {
+    ItemPosition position = getFirstItemPosition();
+    if (position != null) {
+      ItemInfo info = widget.accountant.compute(position.index);
+      if (itemInfo == null || (info.sectionIndex != itemInfo.sectionIndex)) {
+        itemInfo = info;
+        itemPosition = position;
+        setState(() {});
+      }
+    }
+  }
+
+  ItemPosition getFirstItemPosition() {
+    if (widget.itemPositionsListener.itemPositions.value.isEmpty) {
+      return null;
+    }
+    ItemPosition min = widget.itemPositionsListener.itemPositions.value
+        .where((ItemPosition position) => position.itemTrailingEdge > 0)
+        .reduce((ItemPosition min, ItemPosition position) =>
+            position.itemTrailingEdge < min.itemTrailingEdge ? position : min);
+    return min;
   }
 }
 
