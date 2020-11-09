@@ -12,12 +12,14 @@ class ExpendableListView extends StatefulWidget {
   final SectionCount sectionCount;
   final SectionChildBuilder childBuilder;
   final SectionChildrenCount sectionChildrenCount;
+  final ExpandableListController controller;
 
   ExpendableListView(
-      {this.headerBuilder,
-      this.sectionCount,
-      this.childBuilder,
-      this.sectionChildrenCount});
+      {@required this.sectionCount,
+      @required this.headerBuilder,
+      @required this.sectionChildrenCount,
+      @required this.childBuilder,
+      this.controller});
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
@@ -26,54 +28,70 @@ class ExpendableListView extends StatefulWidget {
 class _ExpendableListViewState extends State<ExpendableListView> {
   ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
   ItemScrollController itemScrollController = ItemScrollController();
-  Accountant accountant;
+  _ExpandableListControllerImp controllerImp;
 
   @override
   void initState() {
     super.initState();
-    accountant = Accountant(widget.sectionCount, widget.sectionChildrenCount);
+    controllerImp = _ExpandableListControllerImp(
+        widget.sectionCount, widget.sectionChildrenCount);
+    controllerImp.setExpendCallback(onExpend);
+    widget.controller.setControllerImp(controllerImp);
   }
 
   @override
   void didUpdateWidget(covariant ExpendableListView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.setControllerImp(null);
+      widget.controller.setControllerImp(controllerImp);
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    widget.controller.setControllerImp(null);
+    controllerImp.setExpendCallback(null);
   }
 
   @override
   Widget build(BuildContext context) {
-    accountant.update();
+    controllerImp.update();
     // SliverList
     return Stack(
       children: [
         ScrollablePositionedList.builder(
-          // 只有设置了1.0 才能够准确的标记position 位置
           itemScrollController: itemScrollController,
           itemPositionsListener: itemPositionsListener,
           itemBuilder: (BuildContext context, int index) {
-            ItemInfo itemInfo = accountant.compute(index);
+            ItemInfo itemInfo = controllerImp.compute(index);
             if (itemInfo.isSectionHeader) {
-              return _buildHeader(index, itemInfo.sectionIndex,
-                  accountant.isSectionExpanded(itemInfo.sectionIndex));
+              return _buildHeaderWithClick(index, itemInfo.sectionIndex,
+                  controllerImp.isSectionExpanded(itemInfo.sectionIndex));
             }
             return widget.childBuilder(
                 itemInfo.sectionIndex, itemInfo.itemIndex);
           },
-          itemCount: accountant.count,
+          itemCount: controllerImp._listChildCount,
         ),
         SizedBox.expand(
-          child: StickHeader(itemPositionsListener, _buildHeader, accountant),
+          child: StickHeader(
+              itemPositionsListener, _buildHeaderWithClick, controllerImp),
         ),
       ],
     );
   }
 
-  Widget _buildHeader(int index, int sectionIndex, bool expend) {
+  void onExpend(int sectionIndex, bool expend) {
+    setState(() {});
+  }
+
+  Widget _buildHeaderWithClick(int index, int sectionIndex, bool expend) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          accountant.expends[sectionIndex] =
-              !accountant.isSectionExpanded(sectionIndex);
-        });
+        controllerImp.setSectionExpanded(
+            sectionIndex, !controllerImp.isSectionExpanded(sectionIndex));
         itemScrollController.jumpTo(index: index);
       },
       child: widget.headerBuilder(index, sectionIndex, expend),
@@ -87,67 +105,6 @@ typedef SectionHeaderBuilder = Widget Function(
     int index, int sectionIndex, bool expend);
 typedef SectionChildBuilder = Widget Function(
     int sectionIndex, int sectionChildIndex);
-
-class Accountant {
-  SectionCount sectionCount;
-  SectionChildrenCount sectionChildCount;
-
-  List<int> sectionDataList = [];
-
-  Accountant(this.sectionCount, this.sectionChildCount);
-
-  Map<int, bool> expends = {};
-  int count;
-  Map<int, ItemInfo> map = {};
-
-  void update() {
-    count = 0;
-    map.clear();
-    sectionDataList.clear();
-    int sc = sectionCount();
-    for (int s = 0; s < sc; s++) {
-      int childCount = sectionChildCount(s);
-      sectionDataList.add(count);
-      if (isSectionExpanded(s)) {
-        count += childCount + 1;
-      } else {
-        count += 1;
-      }
-    }
-  }
-
-  ItemInfo compute(int index) {
-    ItemInfo info = map[index];
-    if (info != null) {
-      return info;
-    }
-    int sectionIndex = 0;
-    bool isSectionHeader = false;
-    for (int s = 0; s < sectionDataList.length; s++) {
-      if (index == sectionDataList[s]) {
-        isSectionHeader = true;
-        sectionIndex = s;
-        break;
-      }
-      if (index < sectionDataList[s]) {
-        sectionIndex = s - 1;
-        break;
-      }
-      if (s == sectionDataList.length - 1) {
-        sectionIndex = s;
-      }
-    }
-    if (isSectionHeader) {
-      return ItemInfo(isSectionHeader, sectionIndex, null);
-    }
-    int itemIndex = index - sectionDataList[sectionIndex] - 1;
-    return ItemInfo(isSectionHeader, sectionIndex, itemIndex);
-  }
-
-  bool isSectionExpanded(int s) {
-    return expends[s] == null || expends[s];
-  }
-}
 
 class ItemInfo {
   bool isSectionHeader;
@@ -165,9 +122,9 @@ class ItemInfo {
 class StickHeader extends StatefulWidget {
   final ItemPositionsListener itemPositionsListener;
   final SectionHeaderBuilder builder;
-  final Accountant accountant;
+  final _ExpandableListControllerImp _controllerImp;
 
-  StickHeader(this.itemPositionsListener, this.builder, this.accountant);
+  StickHeader(this.itemPositionsListener, this.builder, this._controllerImp);
 
   @override
   _StickHeaderState createState() => _StickHeaderState();
@@ -190,7 +147,7 @@ class _StickHeaderState extends State<StickHeader> {
       return DisplayWidget(
         headerDisplayHeight: headerDisplayHeight,
         child: widget.builder(itemPosition.index, itemInfo.sectionIndex,
-            widget.accountant.isSectionExpanded(itemInfo.sectionIndex)),
+            widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       );
     }
     return Container();
@@ -205,8 +162,8 @@ class _StickHeaderState extends State<StickHeader> {
   void onPositionChange() {
     ItemPosition position = getFirstItemPosition();
     if (position != null) {
-      ItemInfo info = widget.accountant.compute(position.index);
-      ItemInfo nextInfo = widget.accountant.compute(position.index + 1);
+      ItemInfo info = widget._controllerImp.compute(position.index);
+      ItemInfo nextInfo = widget._controllerImp.compute(position.index + 1);
       if (nextInfo.isSectionHeader) {
         if (position.offsetY <= 0) {
           itemInfo = info;
@@ -216,7 +173,6 @@ class _StickHeaderState extends State<StickHeader> {
           return;
         }
       }
-
       print('position $position');
       print('info $info');
       print('nextInfo $nextInfo');
@@ -249,13 +205,91 @@ class _StickHeaderState extends State<StickHeader> {
   }
 }
 
-typedef Expend = Function(int sectionIndex, bool expend);
+typedef ExpendCallback = Function(int sectionIndex, bool expend);
 
-//TODO
 class ExpandableListController {
+  _ExpandableListControllerImp _controllerImp;
+
   bool isSectionExpanded(int sectionIndex) {
-    return false;
+    return _controllerImp.isSectionExpanded(sectionIndex);
   }
 
-  void setSectionExpanded(int sectionIndex, bool expanded) {}
+  void setSectionExpanded(int sectionIndex, bool expanded) {
+    _controllerImp.setSectionExpanded(sectionIndex, expanded);
+  }
+
+  void setControllerImp(_ExpandableListControllerImp controllerImp) {
+    _controllerImp = controllerImp;
+  }
+}
+
+class _ExpandableListControllerImp {
+  int _listChildCount;
+  SectionCount _sectionCount;
+  SectionChildrenCount _sectionChildCount;
+  List<int> _sectionDataList = [];
+  ExpendCallback _expendCallback;
+  Map<int, bool> _expandedMap = {};
+  Map<int, ItemInfo> itemInfoCache = {};
+
+  _ExpandableListControllerImp(this._sectionCount, this._sectionChildCount);
+
+  void setExpendCallback(ExpendCallback expendCallback) {
+    this._expendCallback = expendCallback;
+  }
+
+  void update() {
+    _listChildCount = 0;
+    itemInfoCache.clear();
+    _sectionDataList.clear();
+    int sc = _sectionCount();
+    for (int s = 0; s < sc; s++) {
+      int childCount = _sectionChildCount(s);
+      _sectionDataList.add(_listChildCount);
+      if (isSectionExpanded(s)) {
+        _listChildCount += childCount + 1;
+      } else {
+        _listChildCount += 1;
+      }
+    }
+  }
+
+  ItemInfo compute(int index) {
+    ItemInfo info = itemInfoCache[index];
+    if (info != null) {
+      return info;
+    }
+    int sectionIndex = 0;
+    bool isSectionHeader = false;
+    for (int s = 0; s < _sectionDataList.length; s++) {
+      if (index == _sectionDataList[s]) {
+        isSectionHeader = true;
+        sectionIndex = s;
+        break;
+      }
+      if (index < _sectionDataList[s]) {
+        sectionIndex = s - 1;
+        break;
+      }
+      if (s == _sectionDataList.length - 1) {
+        sectionIndex = s;
+      }
+    }
+    if (isSectionHeader) {
+      return ItemInfo(isSectionHeader, sectionIndex, null);
+    }
+    int itemIndex = index - _sectionDataList[sectionIndex] - 1;
+    return ItemInfo(isSectionHeader, sectionIndex, itemIndex);
+  }
+
+  bool isSectionExpanded(int sectionIndex) {
+    return _expandedMap[sectionIndex] == null || _expandedMap[sectionIndex];
+  }
+
+  void setSectionExpanded(int sectionIndex, bool expanded) {
+    _expandedMap[sectionIndex] = expanded;
+    if (_expendCallback != null) {
+      _expendCallback(sectionIndex, expanded);
+    }
+  }
 }
