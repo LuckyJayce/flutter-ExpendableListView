@@ -196,7 +196,6 @@ class _StickHeaderState extends State<StickHeader> {
   }
 
   void onPositionChange() {
-    double displayHeight = -1;
     ItemPosition position = getFirstItemPosition();
     if (position != null) {
       ItemInfo info = widget.accountant.compute(position.index);
@@ -209,8 +208,7 @@ class _StickHeaderState extends State<StickHeader> {
           setState(() {});
           return;
         }
-      } else {}
-      headerDisplayHeight = -1;
+      }
 
       print('position $position');
       print('info $info');
@@ -219,16 +217,15 @@ class _StickHeaderState extends State<StickHeader> {
         itemInfo = info;
         itemPosition = position;
         if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
-          headerDisplayHeight = 0;
+          headerDisplayHeight = -1;
         }
         setState(() {});
         return;
       }
-      if (!nextInfo.isSectionHeader) {
-        if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
-          headerDisplayHeight = 0;
-          setState(() {});
-        }
+      if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
+        headerDisplayHeight = -1;
+        setState(() {});
+        return;
       }
     }
   }
