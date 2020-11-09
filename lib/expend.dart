@@ -92,7 +92,10 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   Widget _buildHeaderWithClick(int sectionIndex, bool expend) {
     return GestureDetector(
       onTap: () {
-        onExpend(sectionIndex, expend);
+        print(
+            '_buildHeaderWithClick GestureDetector onTap sectionIndex:$sectionIndex expend:$expend');
+        controllerImp.setSectionExpanded(
+            sectionIndex, !controllerImp.isSectionExpanded(sectionIndex));
       },
       child: widget.headerBuilder(sectionIndex, expend),
     );
