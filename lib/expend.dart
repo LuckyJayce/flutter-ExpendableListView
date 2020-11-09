@@ -36,34 +36,40 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     // SliverList
     return Stack(
       children: [
-        StickHeader(itemPositionsListener, widget.builder, accountant),
         ScrollablePositionedList.builder(
-            // 只有设置了1.0 才能够准确的标记position 位置
-            itemScrollController: scrollController,
-            itemPositionsListener: itemPositionsListener,
-            itemBuilder: (BuildContext context, int index) {
-              ItemInfo itemInfo = accountant.compute(index);
-              if (itemInfo.isSectionHeader) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      accountant.expends[itemInfo.sectionIndex] =
-                          !accountant.isSectionExpanded(itemInfo.sectionIndex);
-                    });
-                  },
-                  child: widget.builder.buildSectionHeader(
-                      itemInfo.sectionIndex,
-                      accountant.isSectionExpanded(itemInfo.sectionIndex)),
-                );
-              }
-              return widget.builder
-                  .buildSectionItem(itemInfo.sectionIndex, itemInfo.itemIndex);
-            },
-            itemCount: accountant.count)
+          // 只有设置了1.0 才能够准确的标记position 位置
+          itemScrollController: scrollController,
+          itemPositionsListener: itemPositionsListener,
+          itemBuilder: (BuildContext context, int index) {
+            ItemInfo itemInfo = accountant.compute(index);
+            if (itemInfo.isSectionHeader) {
+              return _buildHeader(itemInfo.sectionIndex,
+                  accountant.isSectionExpanded(itemInfo.sectionIndex));
+            }
+            return widget.builder
+                .buildSectionItem(itemInfo.sectionIndex, itemInfo.itemIndex);
+          },
+          itemCount: accountant.count,
+        ),
+        StickHeader(itemPositionsListener, _buildHeader, accountant),
       ],
     );
   }
+
+  Widget _buildHeader(int sectionIndex, bool expend) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          accountant.expends[sectionIndex] =
+              !accountant.isSectionExpanded(sectionIndex);
+        });
+      },
+      child: widget.builder.buildSectionHeader(sectionIndex, expend),
+    );
+  }
 }
+
+typedef StickHeaderBuilder = Widget Function(int sectionIndexm, bool expend);
 
 class Accountant {
   ExpendableBuilder builder;
@@ -134,7 +140,7 @@ class ItemInfo {
 
 class StickHeader extends StatefulWidget {
   final ItemPositionsListener itemPositionsListener;
-  final ExpendableBuilder builder;
+  final StickHeaderBuilder builder;
   final Accountant accountant;
 
   StickHeader(this.itemPositionsListener, this.builder, this.accountant);
@@ -156,7 +162,7 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   Widget build(BuildContext context) {
     if (itemInfo != null) {
-      return widget.builder.buildSectionHeader(itemInfo.sectionIndex,
+      return widget.builder(itemInfo.sectionIndex,
           widget.accountant.isSectionExpanded(itemInfo.sectionIndex));
     }
     return Container();

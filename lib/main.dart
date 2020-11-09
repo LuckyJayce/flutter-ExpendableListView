@@ -64,7 +64,9 @@ class MyBuilder extends ExpendableBuilder {
   Widget buildSectionHeader(int section, bool expend) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey),
-      child: Text('header $section'),
+      child: ListTile(
+        title: Text('header $section'),
+      ),
     );
   }
 
