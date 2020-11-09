@@ -117,10 +117,10 @@ class Accountant {
   }
 
   ItemInfo compute(int index) {
-    // ItemInfo info = map[index];
-    // if (info != null) {
-    //   return info;
-    // }
+    ItemInfo info = map[index];
+    if (info != null) {
+      return info;
+    }
     int sectionIndex = 0;
     bool isSectionHeader = false;
     for (int s = 0; s < sectionDataList.length; s++) {
