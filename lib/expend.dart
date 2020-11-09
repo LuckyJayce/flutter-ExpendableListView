@@ -36,7 +36,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     controllerImp = _ExpandableListControllerImp(
         widget.sectionCount, widget.sectionChildrenCount);
     controllerImp.setExpendCallback(onExpend);
-    widget.controller.setControllerImp(controllerImp);
+    widget.controller?.setControllerImp(controllerImp);
   }
 
   @override
@@ -44,14 +44,14 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.setControllerImp(null);
-      widget.controller.setControllerImp(controllerImp);
+      widget.controller?.setControllerImp(controllerImp);
     }
   }
 
   @override
   void dispose() {
     super.dispose();
-    widget.controller.setControllerImp(null);
+    widget.controller?.setControllerImp(null);
     controllerImp.setExpendCallback(null);
   }
 
@@ -67,7 +67,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           itemBuilder: (BuildContext context, int index) {
             ItemInfo itemInfo = controllerImp.compute(index);
             if (itemInfo.isSectionHeader) {
-              return _buildHeaderWithClick(index, itemInfo.sectionIndex,
+              return _buildHeaderWithClick(itemInfo.sectionIndex,
                   controllerImp.isSectionExpanded(itemInfo.sectionIndex));
             }
             return widget.childBuilder(
@@ -85,24 +85,23 @@ class _ExpendableListViewState extends State<ExpendableListView> {
 
   void onExpend(int sectionIndex, bool expend) {
     setState(() {});
+    itemScrollController.jumpTo(
+        index: controllerImp.getSectionHeaderIndex(sectionIndex));
   }
 
-  Widget _buildHeaderWithClick(int index, int sectionIndex, bool expend) {
+  Widget _buildHeaderWithClick(int sectionIndex, bool expend) {
     return GestureDetector(
       onTap: () {
-        controllerImp.setSectionExpanded(
-            sectionIndex, !controllerImp.isSectionExpanded(sectionIndex));
-        itemScrollController.jumpTo(index: index);
+        onExpend(sectionIndex, expend);
       },
-      child: widget.headerBuilder(index, sectionIndex, expend),
+      child: widget.headerBuilder(sectionIndex, expend),
     );
   }
 }
 
 typedef SectionCount = int Function();
 typedef SectionChildrenCount = int Function(int sectionIndex);
-typedef SectionHeaderBuilder = Widget Function(
-    int index, int sectionIndex, bool expend);
+typedef SectionHeaderBuilder = Widget Function(int sectionIndex, bool expend);
 typedef SectionChildBuilder = Widget Function(
     int sectionIndex, int sectionChildIndex);
 
@@ -146,7 +145,7 @@ class _StickHeaderState extends State<StickHeader> {
     if (itemInfo != null) {
       return DisplayWidget(
         headerDisplayHeight: headerDisplayHeight,
-        child: widget.builder(itemPosition.index, itemInfo.sectionIndex,
+        child: widget.builder(itemInfo.sectionIndex,
             widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       );
     }
@@ -227,7 +226,7 @@ class _ExpandableListControllerImp {
   int _listChildCount;
   SectionCount _sectionCount;
   SectionChildrenCount _sectionChildCount;
-  List<int> _sectionDataList = [];
+  List<int> _sectionHeaderIndexList = [];
   ExpendCallback _expendCallback;
   Map<int, bool> _expandedMap = {};
   Map<int, ItemInfo> itemInfoCache = {};
@@ -241,17 +240,24 @@ class _ExpandableListControllerImp {
   void update() {
     _listChildCount = 0;
     itemInfoCache.clear();
-    _sectionDataList.clear();
+    _sectionHeaderIndexList.clear();
     int sc = _sectionCount();
     for (int s = 0; s < sc; s++) {
       int childCount = _sectionChildCount(s);
-      _sectionDataList.add(_listChildCount);
+      _sectionHeaderIndexList.add(_listChildCount);
       if (isSectionExpanded(s)) {
         _listChildCount += childCount + 1;
       } else {
         _listChildCount += 1;
       }
     }
+  }
+
+  int getSectionHeaderIndex(int sectionIndex) {
+    if (sectionIndex < _sectionHeaderIndexList.length) {
+      return _sectionHeaderIndexList[sectionIndex];
+    }
+    return -1;
   }
 
   ItemInfo compute(int index) {
@@ -261,24 +267,24 @@ class _ExpandableListControllerImp {
     }
     int sectionIndex = 0;
     bool isSectionHeader = false;
-    for (int s = 0; s < _sectionDataList.length; s++) {
-      if (index == _sectionDataList[s]) {
+    for (int s = 0; s < _sectionHeaderIndexList.length; s++) {
+      if (index == _sectionHeaderIndexList[s]) {
         isSectionHeader = true;
         sectionIndex = s;
         break;
       }
-      if (index < _sectionDataList[s]) {
+      if (index < _sectionHeaderIndexList[s]) {
         sectionIndex = s - 1;
         break;
       }
-      if (s == _sectionDataList.length - 1) {
+      if (s == _sectionHeaderIndexList.length - 1) {
         sectionIndex = s;
       }
     }
     if (isSectionHeader) {
       return ItemInfo(isSectionHeader, sectionIndex, null);
     }
-    int itemIndex = index - _sectionDataList[sectionIndex] - 1;
+    int itemIndex = index - _sectionHeaderIndexList[sectionIndex] - 1;
     return ItemInfo(isSectionHeader, sectionIndex, itemIndex);
   }
 

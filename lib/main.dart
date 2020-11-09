@@ -47,22 +47,44 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  ExpandableListController controller = ExpandableListController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('home')),
-      body: ExpendableListView(
-        sectionCount: () => 10,
-        sectionChildrenCount: (sectionIndex) => 20,
-        headerBuilder: (index, sectionIndex, expend) => Container(
-          decoration: BoxDecoration(color: Colors.grey),
-          child: ListTile(
-            title: Text('section:$sectionIndex'),
+      body: Column(
+        children: [
+          Row(
+            children: [
+              TextButton(
+                  onPressed: () {
+                    controller.setSectionExpanded(0, true);
+                  },
+                  child: Text('展开sectionIndex 0')),
+              TextButton(
+                  onPressed: () {
+                    controller.setSectionExpanded(0, false);
+                  },
+                  child: Text('折叠sectionIndex 0')),
+            ],
           ),
-        ),
-        childBuilder: (sectionIndex, childIndex) => ListTile(
-          title: Text('item $sectionIndex - $childIndex'),
-        ),
+          Expanded(
+              child: ExpendableListView(
+            controller: controller,
+            sectionCount: () => 10,
+            sectionChildrenCount: (sectionIndex) => 20,
+            headerBuilder: (sectionIndex, expend) => Container(
+              decoration: BoxDecoration(color: Colors.grey),
+              child: ListTile(
+                title: Text('section:$sectionIndex'),
+              ),
+            ),
+            childBuilder: (sectionIndex, childIndex) => ListTile(
+              title: Text('item $sectionIndex - $childIndex'),
+            ),
+          ))
+        ],
       ),
     );
   }
