@@ -1,8 +1,11 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+
+import 'src/item_positions_listener.dart';
+import 'src/scrollable_positioned_list.dart';
 
 class ExpendableListView extends StatefulWidget {
   final ExpendableBuilder builder;
@@ -14,14 +17,12 @@ class ExpendableListView extends StatefulWidget {
 }
 
 class _ExpendableListViewState extends State<ExpendableListView> {
-  ItemScrollController scrollController = ItemScrollController();
   ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
   Accountant accountant;
 
   @override
   void initState() {
     super.initState();
-    itemPositionsListener.itemPositions.addListener(() {});
     accountant = Accountant(widget.builder);
   }
 
@@ -38,7 +39,6 @@ class _ExpendableListViewState extends State<ExpendableListView> {
       children: [
         ScrollablePositionedList.builder(
           // 只有设置了1.0 才能够准确的标记position 位置
-          itemScrollController: scrollController,
           itemPositionsListener: itemPositionsListener,
           itemBuilder: (BuildContext context, int index) {
             ItemInfo itemInfo = accountant.compute(index);
@@ -51,7 +51,9 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           },
           itemCount: accountant.count,
         ),
-        StickHeader(itemPositionsListener, _buildHeader, accountant),
+        SizedBox.expand(
+          child: StickHeader(itemPositionsListener, _buildHeader, accountant),
+        ),
       ],
     );
   }
@@ -136,6 +138,11 @@ class ItemInfo {
   int itemIndex;
 
   ItemInfo(this.isSectionHeader, this.sectionIndex, this.itemIndex);
+
+  @override
+  String toString() {
+    return 'ItemInfo{isSectionHeader: $isSectionHeader, sectionIndex: $sectionIndex, itemIndex: $itemIndex}';
+  }
 }
 
 class StickHeader extends StatefulWidget {
@@ -152,6 +159,7 @@ class StickHeader extends StatefulWidget {
 class _StickHeaderState extends State<StickHeader> {
   ItemPosition itemPosition;
   ItemInfo itemInfo;
+  double headerDisplayHeight = -1;
 
   @override
   void initState() {
@@ -162,8 +170,17 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   Widget build(BuildContext context) {
     if (itemInfo != null) {
-      return widget.builder(itemInfo.sectionIndex,
-          widget.accountant.isSectionExpanded(itemInfo.sectionIndex));
+      return DisplayWidget(
+        headerDisplayHeight: headerDisplayHeight,
+        child: widget.builder(itemInfo.sectionIndex,
+            widget.accountant.isSectionExpanded(itemInfo.sectionIndex)),
+        // child: Container(
+        //   decoration: BoxDecoration(color: Colors.blue),
+        //   child: SizedBox.fromSize(
+        //       child: Text('itemInfo.sectionIndex :${itemInfo.sectionIndex}'),
+        //       size: Size(180, 20)),
+        // ),
+      );
     }
     return Container();
   }
@@ -175,13 +192,39 @@ class _StickHeaderState extends State<StickHeader> {
   }
 
   void onPositionChange() {
+    double displayHeight = -1;
     ItemPosition position = getFirstItemPosition();
     if (position != null) {
       ItemInfo info = widget.accountant.compute(position.index);
+      ItemInfo nextInfo = widget.accountant.compute(position.index + 1);
+      if (nextInfo.isSectionHeader) {
+        if (position.offsetY <= 0) {
+          itemInfo = info;
+          itemPosition = position;
+          headerDisplayHeight = position.height + position.offsetY;
+          setState(() {});
+          return;
+        }
+      } else {}
+      headerDisplayHeight = -1;
+
+      print('position $position');
+      print('info $info');
+      print('nextInfo $nextInfo');
       if (itemInfo == null || (info.sectionIndex != itemInfo.sectionIndex)) {
         itemInfo = info;
         itemPosition = position;
+        if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
+          headerDisplayHeight = 0;
+        }
         setState(() {});
+        return;
+      }
+      if (!nextInfo.isSectionHeader) {
+        if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
+          headerDisplayHeight = 0;
+          setState(() {});
+        }
       }
     }
   }
@@ -196,6 +239,115 @@ class _StickHeaderState extends State<StickHeader> {
             position.itemTrailingEdge < min.itemTrailingEdge ? position : min);
     return min;
   }
+}
+
+class DisplayWidget extends SingleChildRenderObjectWidget {
+  /// Creates a widget that insets its child.
+  ///
+  /// The [headerDisplayHeight] argument must not be null.
+  const DisplayWidget({
+    Key key,
+    @required this.headerDisplayHeight,
+    Widget child,
+  })  : assert(headerDisplayHeight != null),
+        super(key: key, child: child);
+
+  /// The amount of space by which to inset the child.
+  final double headerDisplayHeight;
+
+  @override
+  RenderOffset createRenderObject(BuildContext context) {
+    return RenderOffset(
+      headerDisplayHeight: headerDisplayHeight,
+    );
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, RenderOffset renderObject) {
+    renderObject..headerDisplayHeight = headerDisplayHeight;
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<double>(
+        'headerDisplayHeight', headerDisplayHeight));
+  }
+}
+
+/// Insets its child by the given padding.
+///
+/// When passing layout constraints to its child, padding shrinks the
+/// constraints by the given padding, causing the child to layout at a smaller
+/// size. Padding then sizes itself to its child's size, inflated by the
+/// padding, effectively creating empty space around the child.
+class RenderOffset extends RenderShiftedBox {
+  /// Creates a render object that insets its child.
+  ///
+  /// The [padding] argument must not be null and must have non-negative insets.
+  RenderOffset({
+    @required double headerDisplayHeight,
+    RenderBox child,
+  })  : assert(headerDisplayHeight != null),
+        _headerDisplayHeight = headerDisplayHeight,
+        super(child);
+
+  /// The amount to pad the child in each dimension.
+  ///
+  /// If this is set to an [EdgeInsetsDirectional] object, then [textDirection]
+  /// must not be null.
+  double get headerDisplayHeight => _headerDisplayHeight;
+  double _headerDisplayHeight;
+
+  set headerDisplayHeight(double value) {
+    assert(value != null);
+    if (_headerDisplayHeight == value) return;
+    _headerDisplayHeight = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void performLayout() {
+    final BoxConstraints constraints = this.constraints;
+    if (child == null) {
+      size = constraints.constrain(Size.zero);
+      return;
+    }
+    final BoxConstraints innerConstraints = constraints.loosen();
+    child.layout(innerConstraints, parentUsesSize: true);
+    print(
+        '_headerDisplayHeight:$_headerDisplayHeight offset:${_headerDisplayHeight - child.size.height}');
+    final BoxParentData childParentData = child.parentData as BoxParentData;
+    double offset = _headerDisplayHeight - child.size.height;
+    if (_headerDisplayHeight < 0 || offset > 0) {
+      childParentData.offset = Offset(0, 0);
+    } else {
+      childParentData.offset = Offset(0, offset);
+    }
+    size = constraints.constrain(Size(
+      child.size.width,
+      child.size.height,
+    ));
+  }
+//
+// @override
+// void debugPaintSize(PaintingContext context, Offset offset) {
+//   super.debugPaintSize(context, offset);
+//   assert(() {
+//     final Rect outerRect = offset & size;
+//     debugPaintPadding(context.canvas, outerRect,
+//         child != null ? _resolvedPadding.deflateRect(outerRect) : null);
+//     return true;
+//   }());
+// }
+//
+// @override
+// void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+//   super.debugFillProperties(properties);
+//   properties.add(DiagnosticsProperty<EdgeInsetsGeometry>('padding', padding));
+//   properties.add(EnumProperty<TextDirection>('textDirection', textDirection,
+//       defaultValue: null));
+// }
 }
 
 abstract class ExpendableBuilder {

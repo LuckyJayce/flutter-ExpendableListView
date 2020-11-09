@@ -64,8 +64,9 @@ class MyBuilder extends ExpendableBuilder {
   Widget buildSectionHeader(int section, bool expend) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey),
-      child: ListTile(
-        title: Text('header $section'),
+      child: SizedBox.fromSize(
+        child: Text('header $section'),
+        size: Size(100, 30),
       ),
     );
   }
@@ -84,6 +85,6 @@ class MyBuilder extends ExpendableBuilder {
 
   @override
   int getSectionItemCount(int sectionIndex) {
-    return 10;
+    return 20;
   }
 }
