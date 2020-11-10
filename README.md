@@ -1,16 +1,7 @@
-# load_data_test
+### 说明
 
-A new Flutter project.
+ 通过计算section位置，section也当做listview item，避免ListView + Column(children实现方式)的性能问题
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+###TODO
+1. 顶部吸顶的stickyHeader有时溢出
+2. 折叠站看动画
