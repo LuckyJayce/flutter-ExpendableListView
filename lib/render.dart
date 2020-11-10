@@ -1,37 +1,37 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-class DisplayWidget extends SingleChildRenderObjectWidget {
+class DisplayHeightWidget extends SingleChildRenderObjectWidget {
   /// Creates a widget that insets its child.
   ///
-  /// The [headerDisplayHeight] argument must not be null.
-  const DisplayWidget({
+  /// The [displayHeight] argument must not be null.
+  const DisplayHeightWidget({
     Key key,
-    @required this.headerDisplayHeight,
+    @required this.displayHeight, //displayHeight如果小于0 完整显示child，否则通过offset 只显示部分
     Widget child,
-  })  : assert(headerDisplayHeight != null),
+  })  : assert(displayHeight != null),
         super(key: key, child: child);
 
   /// The amount of space by which to inset the child.
-  final double headerDisplayHeight;
+  final double displayHeight;
 
   @override
   RenderOffset createRenderObject(BuildContext context) {
     return RenderOffset(
-      headerDisplayHeight: headerDisplayHeight,
+      headerDisplayHeight: displayHeight,
     );
   }
 
   @override
   void updateRenderObject(BuildContext context, RenderOffset renderObject) {
-    renderObject..headerDisplayHeight = headerDisplayHeight;
+    renderObject..headerDisplayHeight = displayHeight;
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<double>(
-        'headerDisplayHeight', headerDisplayHeight));
+    properties
+        .add(DiagnosticsProperty<double>('headerDisplayHeight', displayHeight));
   }
 }
 
@@ -75,8 +75,6 @@ class RenderOffset extends RenderShiftedBox {
     }
     final BoxConstraints innerConstraints = constraints.loosen();
     child.layout(innerConstraints, parentUsesSize: true);
-    print(
-        '_headerDisplayHeight:$_headerDisplayHeight offset:${_headerDisplayHeight - child.size.height}');
     final BoxParentData childParentData = child.parentData as BoxParentData;
     double offset = _headerDisplayHeight - child.size.height;
     if (_headerDisplayHeight < 0 || offset > 0) {

@@ -146,8 +146,8 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   Widget build(BuildContext context) {
     if (itemInfo != null) {
-      return DisplayWidget(
-        headerDisplayHeight: headerDisplayHeight,
+      return DisplayHeightWidget(
+        displayHeight: headerDisplayHeight,
         child: widget.builder(itemInfo.sectionIndex,
             widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       );
