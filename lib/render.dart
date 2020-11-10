@@ -7,7 +7,8 @@ class DisplayHeightWidget extends SingleChildRenderObjectWidget {
   /// The [displayHeight] argument must not be null.
   const DisplayHeightWidget({
     Key key,
-    @required this.displayHeight, //displayHeight如果小于0 完整显示child，否则通过offset 只显示部分
+    @required
+        this.displayHeight, //displayHeight如果小于0 完整显示child，否则通过offset 只显示部分
     Widget child,
   })  : assert(displayHeight != null),
         super(key: key, child: child);
@@ -73,8 +74,7 @@ class RenderOffset extends RenderShiftedBox {
       size = constraints.constrain(Size.zero);
       return;
     }
-    final BoxConstraints innerConstraints = constraints.loosen();
-    child.layout(innerConstraints, parentUsesSize: true);
+    child.layout(constraints, parentUsesSize: true);
     final BoxParentData childParentData = child.parentData as BoxParentData;
     double offset = _headerDisplayHeight - child.size.height;
     if (_headerDisplayHeight < 0 || offset > 0) {
@@ -84,7 +84,7 @@ class RenderOffset extends RenderShiftedBox {
     }
     size = constraints.constrain(Size(
       child.size.width,
-      child.size.height,
+      _headerDisplayHeight > 0 ? _headerDisplayHeight : child.size.height,
     ));
   }
 }

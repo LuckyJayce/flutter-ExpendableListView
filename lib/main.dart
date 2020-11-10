@@ -73,7 +73,7 @@ class _HomeState extends State<Home> {
               child: ExpendableListView(
             controller: controller,
             sectionCount: () => 10,
-            sectionChildrenCount: (sectionIndex) => 20,
+            sectionChildrenCount: (sectionIndex) => 5,
             headerBuilder: (sectionIndex, expend) => Container(
               decoration: BoxDecoration(color: Colors.grey),
               child: ListTile(

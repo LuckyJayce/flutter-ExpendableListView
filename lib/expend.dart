@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:load_data_test/render.dart';
 
 import 'src/item_positions_listener.dart';
 import 'src/scrollable_positioned_list.dart';
@@ -129,11 +130,35 @@ class StickHeader extends StatefulWidget {
   _StickHeaderState createState() => _StickHeaderState();
 }
 
+class HeaderClipper extends CustomClipper<Rect> {
+  double headerDisplayHeight;
+
+  HeaderClipper(this.headerDisplayHeight);
+
+  @override
+  Rect getClip(Size size) {
+    print(
+        'getClip headerDisplayHeight:$headerDisplayHeight h:${size.height - headerDisplayHeight} size.height:${size.height}');
+    if (headerDisplayHeight > 0) {
+      return Rect.fromLTRB(
+          0, size.height - headerDisplayHeight, size.width, size.height);
+    }
+    return Rect.fromLTRB(0, 0, size.width, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) {
+    return true;
+  }
+}
+
 class _StickHeaderState extends State<StickHeader> {
   ItemPosition itemPosition;
   ItemInfo itemInfo;
   double headerDisplayHeight = -1;
   ScrollController scrollController = ScrollController();
+  Widget header;
+  int displaySectionIndex = -1;
 
   @override
   void initState() {
@@ -143,11 +168,18 @@ class _StickHeaderState extends State<StickHeader> {
 
   @override
   Widget build(BuildContext context) {
+    print('headerDisplayHeight:$headerDisplayHeight');
     if (itemInfo != null) {
-      return SingleChildScrollView(
-        controller: scrollController,
-        child: widget.builder(itemInfo.sectionIndex,
-            widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
+      if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
+        header = widget.builder(itemInfo.sectionIndex,
+            widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex));
+      }
+      return DisplayHeightWidget(
+        displayHeight: headerDisplayHeight,
+        child: ClipRect(
+          clipper: HeaderClipper(headerDisplayHeight),
+          child: header,
+        ),
       );
     }
     return Container();
@@ -160,38 +192,38 @@ class _StickHeaderState extends State<StickHeader> {
   }
 
   void onPositionChange() {
+    bool needUpdate = false;
     ItemPosition position = getFirstItemPosition();
     if (position != null) {
       ItemInfo info = widget._controllerImp.compute(position.index);
       ItemInfo nextInfo = widget._controllerImp.compute(position.index + 1);
       if (nextInfo.isSectionHeader) {
         if (position.offsetY <= 0) {
-          //TODO
           itemInfo = info;
           itemPosition = position;
           headerDisplayHeight = position.height + position.offsetY;
-          scrollController.jumpTo(-position.offsetY);
-          return;
+          needUpdate = true;
         }
       }
       print('position $position');
       print('info $info');
+      print('itemInfo $itemInfo');
       print('nextInfo $nextInfo');
+
       if (itemInfo == null || (info.sectionIndex != itemInfo.sectionIndex)) {
-        itemInfo = info;
-        itemPosition = position;
         if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
           headerDisplayHeight = -1;
-          scrollController.jumpTo(0);
         }
-        setState(() {});
-        return;
+        needUpdate = true;
+        itemInfo = info;
+        itemPosition = position;
       }
       if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
         headerDisplayHeight = -1;
-        scrollController.jumpTo(0);
+        needUpdate = true;
         return;
       }
+      setState(() {});
     }
   }
 
