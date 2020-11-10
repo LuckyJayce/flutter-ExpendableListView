@@ -3,7 +3,6 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-import 'render.dart';
 import 'src/item_positions_listener.dart';
 import 'src/scrollable_positioned_list.dart';
 
@@ -75,10 +74,8 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           },
           itemCount: controllerImp._listChildCount,
         ),
-        SizedBox.expand(
-          child: StickHeader(
-              itemPositionsListener, _buildHeaderWithClick, controllerImp),
-        ),
+        StickHeader(
+            itemPositionsListener, _buildHeaderWithClick, controllerImp),
       ],
     );
   }
@@ -136,6 +133,7 @@ class _StickHeaderState extends State<StickHeader> {
   ItemPosition itemPosition;
   ItemInfo itemInfo;
   double headerDisplayHeight = -1;
+  ScrollController scrollController = ScrollController();
 
   @override
   void initState() {
@@ -146,8 +144,8 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   Widget build(BuildContext context) {
     if (itemInfo != null) {
-      return DisplayHeightWidget(
-        displayHeight: headerDisplayHeight,
+      return SingleChildScrollView(
+        controller: scrollController,
         child: widget.builder(itemInfo.sectionIndex,
             widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       );
@@ -168,10 +166,11 @@ class _StickHeaderState extends State<StickHeader> {
       ItemInfo nextInfo = widget._controllerImp.compute(position.index + 1);
       if (nextInfo.isSectionHeader) {
         if (position.offsetY <= 0) {
+          //TODO
           itemInfo = info;
           itemPosition = position;
           headerDisplayHeight = position.height + position.offsetY;
-          setState(() {});
+          scrollController.jumpTo(-position.offsetY);
           return;
         }
       }
@@ -183,13 +182,14 @@ class _StickHeaderState extends State<StickHeader> {
         itemPosition = position;
         if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
           headerDisplayHeight = -1;
+          scrollController.jumpTo(0);
         }
         setState(() {});
         return;
       }
       if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
         headerDisplayHeight = -1;
-        setState(() {});
+        scrollController.jumpTo(0);
         return;
       }
     }
