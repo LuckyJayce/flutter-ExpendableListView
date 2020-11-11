@@ -26,13 +26,13 @@ class ExpendableListView extends StatefulWidget {
 
 class _ExpendableListViewState extends State<ExpendableListView> {
   ScrollController scrollController = ScrollController();
-  _ExpandableListControllerImp controllerImp;
+  _ControllerImp controllerImp;
 
   @override
   void initState() {
     super.initState();
-    controllerImp = _ExpandableListControllerImp(
-        widget.sectionCount, widget.sectionChildrenCount);
+    controllerImp =
+        _ControllerImp(widget.sectionCount, widget.sectionChildrenCount);
     controllerImp.addExpendCallback(onExpend);
     widget.controller?.setControllerImp(controllerImp);
   }
@@ -63,12 +63,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           controller: scrollController,
           itemBuilder: (BuildContext context, int index) {
             ItemInfo itemInfo = controllerImp.compute(index);
-            if (itemInfo.isSectionHeader) {
-              return _buildHeader(index, itemInfo.sectionIndex,
-                  controllerImp.isSectionExpanded(itemInfo.sectionIndex));
-            }
-            return _buildChild(
-                index, itemInfo.sectionIndex, itemInfo.itemIndex);
+            return _buildItem(itemInfo);
           },
           itemCount: controllerImp._listChildCount,
         ),
@@ -79,38 +74,45 @@ class _ExpendableListViewState extends State<ExpendableListView> {
 
   void onExpend(int sectionIndex, bool expend) {
     setState(() {});
-    //TODO
-    // itemScrollController.jumpTo(
-    //     index: controllerImp.getSectionHeaderIndex(sectionIndex));
+    double scrollOffsetY = controllerImp.headerScrollOffsetYList[sectionIndex];
+    print('onExpend sectionIndex:$sectionIndex scrollOffsetY:$scrollOffsetY');
+    if (scrollOffsetY != null) {
+      scrollController.jumpTo(scrollOffsetY);
+    }
   }
 
-  Widget _buildHeader(int index, int sectionIndex, bool expend) {
+  Widget _buildItem(ItemInfo itemInfo) {
+    if (itemInfo.isSectionHeader) {
+      return _buildHeader(itemInfo);
+    }
+    return _buildChild(itemInfo);
+  }
+
+  Widget _buildHeader(ItemInfo itemInfo) {
     return RegisteredWidget(
-      index: index,
+      itemInfo: itemInfo,
       controllerImp: controllerImp,
       child: GestureDetector(
         onTap: () {
-          print(
-              '_buildHeaderWithClick GestureDetector onTap sectionIndex:$sectionIndex expend:$expend');
-          controllerImp.setSectionExpanded(
-              sectionIndex, !controllerImp.isSectionExpanded(sectionIndex));
+          controllerImp.setSectionExpanded(itemInfo.sectionIndex,
+              !controllerImp.isSectionExpanded(itemInfo.sectionIndex));
         },
-        child: widget.headerBuilder(sectionIndex, expend),
+        child: widget.headerBuilder(itemInfo.sectionIndex,
+            controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       ),
     );
   }
 
-  Widget _buildChild(int index, int sectionIndex, int itemIndex) {
+  Widget _buildChild(ItemInfo itemInfo) {
     return RegisteredWidget(
-      index: index,
+      itemInfo: itemInfo,
       controllerImp: controllerImp,
-      child: widget.childBuilder(sectionIndex, itemIndex),
+      child: widget.childBuilder(itemInfo.sectionIndex, itemInfo.itemIndex),
     );
   }
 }
 
-typedef _SectionHeaderBuilderImp = Widget Function(
-    int index, int sectionIndex, bool expend);
+typedef _SectionHeaderBuilderImp = Widget Function(ItemInfo itemInfo);
 
 typedef SectionCount = int Function();
 typedef SectionChildrenCount = int Function(int sectionIndex);
@@ -119,10 +121,10 @@ typedef SectionChildBuilder = Widget Function(
     int sectionIndex, int sectionChildIndex);
 
 class ItemInfo {
-  int index;
-  bool isSectionHeader;
-  int sectionIndex;
-  int itemIndex;
+  final int index;
+  final bool isSectionHeader;
+  final int sectionIndex;
+  final int itemIndex;
 
   ItemInfo(this.index, this.isSectionHeader, this.sectionIndex, this.itemIndex);
 
@@ -135,7 +137,7 @@ class ItemInfo {
 class StickHeader extends StatefulWidget {
   final ScrollController scrollController;
   final _SectionHeaderBuilderImp builder;
-  final _ExpandableListControllerImp _controllerImp;
+  final _ControllerImp _controllerImp;
 
   StickHeader(this.scrollController, this.builder, this._controllerImp);
 
@@ -183,8 +185,7 @@ class _StickHeaderState extends State<StickHeader> {
     print('headerDisplayHeight:$headerDisplayHeight');
     if (itemInfo != null) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
-        header = widget.builder(itemInfo.index, itemInfo.sectionIndex,
-            widget._controllerImp.isSectionExpanded(itemInfo.sectionIndex));
+        header = widget.builder(itemInfo);
       }
       return DisplayHeightWidget(
         displayHeight: headerDisplayHeight,
@@ -211,14 +212,11 @@ class _StickHeaderState extends State<StickHeader> {
   }
 
   void onScroll() {
-    print('onScroll');
-    bool needUpdate = false;
-
-    _RegisteredElement first;
-    int firstIndex;
+    _RegisteredElement firstVisibleElement;
+    ItemInfo firstVisibleItemInfo;
     double firstItemOffsetY;
     widget._controllerImp.elements.forEach((_RegisteredElement element) {
-      int index = element.getIndex();
+      ItemInfo itemInfo = element.getItemInfo();
 
       RenderViewport viewport;
       final RenderBox box = element.renderObject;
@@ -234,41 +232,47 @@ class _StickHeaderState extends State<StickHeader> {
         double itemTrailingEdge = (itemOffset + box.size.height).round() /
             widget.scrollController.position.viewportDimension;
         if (itemLeadingEdge < 1 && itemTrailingEdge > 0) {
-          if (firstIndex == null || firstIndex > index) {
-            firstIndex = index;
-            first = element;
+          if (firstVisibleItemInfo == null ||
+              firstVisibleItemInfo.index > itemInfo.index) {
+            firstVisibleItemInfo = itemInfo;
+            firstVisibleElement = element;
             firstItemOffsetY = itemOffset;
+          }
+          if (itemInfo.isSectionHeader) {
+            double scrollY = widget.scrollController.position.pixels;
+            double sectionHeaderScrollOffsetY = scrollY + firstItemOffsetY;
+            widget._controllerImp.setSectionHeaderOffsetY(
+                itemInfo.sectionIndex, sectionHeaderScrollOffsetY);
+            print(
+                'put scrollY:$scrollY  sectionIndex:${itemInfo.sectionIndex} sectionHeaderScrollOffsetY:$sectionHeaderScrollOffsetY');
           }
         }
       }
     });
 
-    if (first == null || first.getIndex() < 0) {
+    if (firstVisibleElement == null || firstVisibleItemInfo == null) {
       return;
     }
-    ItemInfo info = widget._controllerImp.compute(firstIndex);
-    ItemInfo nextInfo = widget._controllerImp.compute(firstIndex + 1);
-    print('index:$firstIndex');
-    print('info:$info');
-    print('nextInfo:$nextInfo');
-    if (nextInfo.isSectionHeader) {
-      final RenderBox box = first.renderObject;
+    ItemInfo nextItemInfo =
+        widget._controllerImp.compute(firstVisibleItemInfo.index + 1);
+    print('info:$firstVisibleItemInfo');
+    print('nextInfo:$nextItemInfo');
 
+    if (nextItemInfo.isSectionHeader) {
+      final RenderBox box = firstVisibleElement.renderObject;
       if (firstItemOffsetY <= 0) {
         headerDisplayHeight = box.size.height + firstItemOffsetY;
-        needUpdate = true;
       }
     }
-    if (itemInfo == null || (info.sectionIndex != itemInfo.sectionIndex)) {
-      if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
+    if (itemInfo == null ||
+        (firstVisibleItemInfo.sectionIndex != itemInfo.sectionIndex)) {
+      if (!nextItemInfo.isSectionHeader && headerDisplayHeight > 0) {
         headerDisplayHeight = -1;
       }
-      needUpdate = true;
-      itemInfo = info;
+      itemInfo = firstVisibleItemInfo;
     }
-    if (!nextInfo.isSectionHeader && headerDisplayHeight > 0) {
+    if (!nextItemInfo.isSectionHeader && headerDisplayHeight > 0) {
       headerDisplayHeight = -1;
-      needUpdate = true;
       return;
     }
     setState(() {});
@@ -278,7 +282,7 @@ class _StickHeaderState extends State<StickHeader> {
 typedef ExpendCallback = Function(int sectionIndex, bool expend);
 
 class ExpandableListController {
-  _ExpandableListControllerImp _controllerImp;
+  _ControllerImp _controllerImp;
 
   bool isSectionExpanded(int sectionIndex) {
     return _controllerImp.isSectionExpanded(sectionIndex);
@@ -288,13 +292,13 @@ class ExpandableListController {
     _controllerImp.setSectionExpanded(sectionIndex, expanded);
   }
 
-  void setControllerImp(_ExpandableListControllerImp controllerImp) {
+  void setControllerImp(_ControllerImp controllerImp) {
     _controllerImp = controllerImp;
   }
 }
 
 ///控制类
-class _ExpandableListControllerImp {
+class _ControllerImp {
   int _listChildCount;
   SectionCount _sectionCount;
   SectionChildrenCount _sectionChildCount;
@@ -304,8 +308,9 @@ class _ExpandableListControllerImp {
   Set<_RegisteredElement> elements = {};
   _RegisteredElement first;
   List<ExpendCallback> expendCallbackList = [];
+  Map<int, double> headerScrollOffsetYList = {};
 
-  _ExpandableListControllerImp(this._sectionCount, this._sectionChildCount);
+  _ControllerImp(this._sectionCount, this._sectionChildCount);
 
   void update() {
     _listChildCount = 0;
@@ -321,6 +326,10 @@ class _ExpandableListControllerImp {
         _listChildCount += 1;
       }
     }
+  }
+
+  void setSectionHeaderOffsetY(int sectionIndex, double scrollOffsetY) {
+    headerScrollOffsetYList[sectionIndex] = scrollOffsetY;
   }
 
   void addExpendCallback(ExpendCallback callback) {
@@ -388,11 +397,11 @@ class _ExpandableListControllerImp {
 
 ///注册element
 class RegisteredWidget extends StatelessWidget {
-  final _ExpandableListControllerImp controllerImp;
+  final ItemInfo itemInfo;
+  final _ControllerImp controllerImp;
   final Widget child;
 
-  RegisteredWidget({int index, this.controllerImp, this.child})
-      : super(key: ValueKey<int>(index));
+  RegisteredWidget({this.itemInfo, this.controllerImp, this.child}) : super();
 
   @override
   StatelessElement createElement() => _RegisteredElement(this);
@@ -406,13 +415,12 @@ class RegisteredWidget extends StatelessWidget {
 class _RegisteredElement extends StatelessElement {
   _RegisteredElement(RegisteredWidget widget) : super(widget);
 
-  int getIndex() {
+  ItemInfo getItemInfo() {
     RegisteredWidget registeredElementWidget = widget;
     if (registeredElementWidget != null) {
-      ValueKey<int> index = registeredElementWidget.key;
-      return index.value;
+      return registeredElementWidget.itemInfo;
     }
-    return -1;
+    return null;
   }
 
   @override
@@ -420,7 +428,7 @@ class _RegisteredElement extends StatelessElement {
     super.mount(parent, newSlot);
     RegisteredWidget registeredElementWidget = widget;
     registeredElementWidget.controllerImp.register(this);
-    print('mount index :${getIndex()}');
+    print('mount info :${getItemInfo()}');
   }
 
   @override
@@ -432,7 +440,7 @@ class _RegisteredElement extends StatelessElement {
 
   @override
   void unmount() {
-    print('unmount index :${getIndex()}');
+    print('unmount info :${getItemInfo()}');
 
     RegisteredWidget registeredElementWidget = widget;
     registeredElementWidget.controllerImp.unregister(this);
