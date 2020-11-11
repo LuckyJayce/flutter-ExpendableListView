@@ -125,24 +125,23 @@ class _HomeState extends State<Home> {
               sticky: sticky,
               builder: ExpendableItemBuilder.build(
                 sectionCount: () => data.length,
-                sectionChildrenCount: (sectionIndex) =>
-                    data[sectionIndex].length,
+                sectionChildrenCount: (section) => data[section].length,
                 headerBuilder:
-                    (BuildContext context, int sectionIndex, bool expended) {
+                    (BuildContext context, int section, bool expended) {
                   return Container(
                     decoration: BoxDecoration(color: Colors.grey),
                     child: ListTile(
-                        title: Text('section:$sectionIndex'),
+                        title: Text('section:$section'),
                         trailing: ExpandIcon(
                           // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
-                          key: ValueKey(sectionIndex),
+                          key: ValueKey(section),
                           isExpanded: expended,
                           onPressed: null,
                         )),
                   );
                 },
-                childBuilder: (context, sectionIndex, childIndex) => ListTile(
-                  title: Text(data[sectionIndex][childIndex]),
+                childBuilder: (context, section, childIndex) => ListTile(
+                  title: Text(data[section][childIndex]),
                 ),
               ),
             ),

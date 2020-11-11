@@ -532,18 +532,18 @@ class _RegisteredElement extends StatelessElement {
 typedef SectionCount = int Function();
 
 ///获取section对应childCount
-typedef ChildrenCount = int Function(int sectionIndex);
+typedef ChildrenCount = int Function(int section);
 
 ///构建 SectionHeader
 typedef SectionHeaderBuilder = Widget Function(
-    BuildContext context, int sectionIndex, bool expended);
+    BuildContext context, int section, bool expended);
 
 ///构建section下的child
 typedef SectionChildBuilder = Widget Function(
-    BuildContext context, int sectionIndex, int sectionChildIndex);
+    BuildContext context, int section, int childIndex);
 
 ///折叠展开回调
-typedef ExpendSectionCallback = Function(int sectionIndex, bool expended);
+typedef ExpendSectionCallback = Function(int section, bool expended);
 typedef ExpendAllCallback = Function(bool expendAll);
 
 ///数据加载成功显示的WidgetBuilder
