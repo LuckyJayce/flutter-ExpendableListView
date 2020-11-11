@@ -76,7 +76,6 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   void onExpend(int sectionIndex, bool expend) {
     setState(() {});
     double scrollOffsetY = controllerImp.headerScrollOffsetYList[sectionIndex];
-    print('onExpend sectionIndex:$sectionIndex scrollOffsetY:$scrollOffsetY');
     if (scrollOffsetY != null) {
       scrollController.jumpTo(scrollOffsetY);
     }
@@ -115,12 +114,6 @@ class _ExpendableListViewState extends State<ExpendableListView> {
 
 typedef _SectionHeaderBuilderImp = Widget Function(ItemInfo itemInfo);
 
-typedef SectionCount = int Function();
-typedef SectionChildrenCount = int Function(int sectionIndex);
-typedef SectionHeaderBuilder = Widget Function(int sectionIndex, bool expend);
-typedef SectionChildBuilder = Widget Function(
-    int sectionIndex, int sectionChildIndex);
-
 class ItemInfo {
   final int index;
   final bool isSectionHeader;
@@ -153,8 +146,6 @@ class HeaderClipper extends CustomClipper<Rect> {
 
   @override
   Rect getClip(Size size) {
-    print(
-        'getClip headerDisplayHeight:$headerDisplayHeight h:${size.height - headerDisplayHeight} size.height:${size.height}');
     if (headerDisplayHeight > 0) {
       return Rect.fromLTRB(
           0, size.height - headerDisplayHeight, size.width, size.height);
@@ -177,13 +168,12 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   void initState() {
     widget.scrollController.addListener(onScroll);
-    widget._controllerImp.addExpendCallback(onExpend);
+    widget._controllerImp.addExpendCallback(onExpended);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('headerDisplayHeight:$headerDisplayHeight');
     if (itemInfo != null) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
         header = widget.builder(itemInfo);
@@ -202,11 +192,11 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   void dispose() {
     widget.scrollController.removeListener(onScroll);
-    widget._controllerImp.removeExpendCallback(onExpend);
+    widget._controllerImp.removeExpendCallback(onExpended);
     super.dispose();
   }
 
-  void onExpend(int sectionIndex, bool expend) {
+  void onExpended(int sectionIndex, bool expended) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       onScroll();
     });
@@ -244,8 +234,6 @@ class _StickHeaderState extends State<StickHeader> {
             double sectionHeaderScrollOffsetY = scrollY + firstItemOffsetY;
             widget._controllerImp.setSectionHeaderOffsetY(
                 itemInfo.sectionIndex, sectionHeaderScrollOffsetY);
-            print(
-                'put scrollY:$scrollY  sectionIndex:${itemInfo.sectionIndex} sectionHeaderScrollOffsetY:$sectionHeaderScrollOffsetY');
           }
         }
       }
@@ -256,8 +244,6 @@ class _StickHeaderState extends State<StickHeader> {
     }
     ItemInfo nextItemInfo =
         widget._controllerImp.compute(firstVisibleItemInfo.index + 1);
-    print('info:$firstVisibleItemInfo');
-    print('nextInfo:$nextItemInfo');
 
     if (nextItemInfo.isSectionHeader) {
       final RenderBox box = firstVisibleElement.renderObject;
@@ -279,8 +265,6 @@ class _StickHeaderState extends State<StickHeader> {
     setState(() {});
   }
 }
-
-typedef ExpendCallback = Function(int sectionIndex, bool expend);
 
 class ExpandableListController {
   _ControllerImp _controllerImp;
@@ -429,7 +413,6 @@ class _RegisteredElement extends StatelessElement {
     super.mount(parent, newSlot);
     RegisteredWidget registeredElementWidget = widget;
     registeredElementWidget.controllerImp.register(this);
-    print('mount info :${getItemInfo()}');
   }
 
   @override
@@ -441,10 +424,24 @@ class _RegisteredElement extends StatelessElement {
 
   @override
   void unmount() {
-    print('unmount info :${getItemInfo()}');
-
     RegisteredWidget registeredElementWidget = widget;
     registeredElementWidget.controllerImp.unregister(this);
     super.unmount();
   }
 }
+
+///获取sectionCount
+typedef SectionCount = int Function();
+
+///获取section对应childCount
+typedef SectionChildrenCount = int Function(int sectionIndex);
+
+///构建 SectionHeader
+typedef SectionHeaderBuilder = Widget Function(int sectionIndex, bool expended);
+
+///构建section下的child
+typedef SectionChildBuilder = Widget Function(
+    int sectionIndex, int sectionChildIndex);
+
+///折叠展开回调
+typedef ExpendCallback = Function(int sectionIndex, bool expended);
