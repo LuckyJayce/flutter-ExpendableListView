@@ -149,12 +149,14 @@ class MyDataBuilder implements ExpendableListDataBuilder {
   }
 
   @override
-  Widget buildSectionHeader(int sectionIndex, bool expended) {
+  Widget buildSectionHeader(int sectionIndex, bool expended, bool floatHeader) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey),
       child: ListTile(
           title: Text('section:$sectionIndex'),
           trailing: ExpandIcon(
+            // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
+            key: ValueKey(sectionIndex),
             isExpanded: expended,
             onPressed: null,
           )),
