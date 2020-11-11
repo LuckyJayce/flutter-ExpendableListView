@@ -25,9 +25,9 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   void initState() {
     super.initState();
     controllerImp = _ControllerImp(widget.builder);
+    widget.controller?.setControllerImp(controllerImp);
     controllerImp.addExpendSectionCallback(onExpend);
     controllerImp.addExpendAllCallback(onExpendAll);
-    widget.controller?.setControllerImp(controllerImp);
   }
 
   @override
@@ -49,7 +49,6 @@ class _ExpendableListViewState extends State<ExpendableListView> {
 
   @override
   Widget build(BuildContext context) {
-    print('build ${controllerImp._expandedMap.toString()}');
     controllerImp.update();
     // SliverList
     return Stack(
@@ -76,7 +75,6 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   }
 
   void onExpendAll(bool expendAll) {
-    print('onExpendAll :$expendAll');
     setState(() {});
     scrollController.jumpTo(0);
   }
@@ -157,7 +155,8 @@ class _StickHeaderState extends State<_StickHeader> {
 
   @override
   Widget build(BuildContext context) {
-    if (itemInfo != null) {
+    if (itemInfo != null &&
+        widget._controllerImp.builder.getSectionCount() > 0) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
         header = widget.builder(itemInfo);
       }
@@ -231,6 +230,9 @@ class _StickHeaderState extends State<_StickHeader> {
     });
 
     if (firstVisibleElement == null || firstVisibleItemInfo == null) {
+      setState(() {
+        itemInfo = null;
+      });
       return;
     }
     ItemInfo nextItemInfo =
@@ -278,10 +280,14 @@ class _HeaderClipper extends CustomClipper<Rect> {
   }
 }
 
+///给外部调用的控制类
 class ExpandableListController {
+  bool expendAll;
   _ControllerImp _controllerImp;
   List<ExpendSectionCallback> _expendCallbackList = [];
   List<ExpendAllCallback> _expendAllCallbackList = [];
+
+  ExpandableListController({this.expendAll = true});
 
   bool isSectionExpanded(int sectionIndex) {
     return _controllerImp?.isSectionExpanded(sectionIndex);
@@ -295,6 +301,12 @@ class ExpandableListController {
 
   void setControllerImp(_ControllerImp controllerImp) {
     _controllerImp = controllerImp;
+    if (expendAll != null) {
+      if (_controllerImp._expendAll != expendAll) {
+        _controllerImp.setExpendAll(expendAll);
+      }
+      expendAll = null;
+    }
   }
 
   void addExpendSectionCallback(ExpendSectionCallback callback) {
@@ -353,7 +365,6 @@ class _ControllerImp {
     itemInfoCache.clear();
     _sectionHeaderIndexList.clear();
     int sc = builder.getSectionCount();
-    print('update sc:$sc');
     for (int s = 0; s < sc; s++) {
       int childCount = builder.getSectionChildCount(s);
       _sectionHeaderIndexList.add(_listChildCount);

@@ -48,9 +48,18 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  ExpandableListController controller = ExpandableListController();
+  ExpandableListController controller =
+      ExpandableListController(expendAll: true);
   int times = 0;
   MyDataBuilder dataBuilder = MyDataBuilder();
+
+  @override
+  void initState() {
+    super.initState();
+    List<List<String>> data = buildData();
+    dataBuilder.data.clear();
+    dataBuilder.data.addAll(data);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +102,13 @@ class _HomeState extends State<Home> {
                     });
                   },
                   child: Text('更新数据')),
+              TextButton(
+                  onPressed: () {
+                    setState(() {
+                      dataBuilder.data.clear();
+                    });
+                  },
+                  child: Text('更新为空数据')),
             ],
           ),
           Expanded(
