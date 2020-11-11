@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -12,8 +13,48 @@ class ExpendableListView extends StatefulWidget {
   final ExpandableListController controller;
   final bool sticky;
 
+  //ListView params
+//  固定垂直方向
+  final Axis scrollDirection = Axis.vertical;
+  final bool reverse;
+  final bool primary;
+  final ScrollPhysics physics;
+  final bool shrinkWrap;
+  final EdgeInsetsGeometry padding;
+  @required
+  final IndexedWidgetBuilder separatorBuilder;
+  @required
+  final bool addAutomaticKeepAlives;
+  final bool addRepaintBoundaries;
+  final bool addSemanticIndexes;
+  final double cacheExtent;
+  final DragStartBehavior dragStartBehavior;
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+  final String restorationId;
+  final Clip clipBehavior;
+
   ExpendableListView.build(
-      {@required this.builder, this.controller, this.sticky = true});
+      {Key key,
+      @required this.builder,
+      this.controller,
+      this.sticky = true,
+      //ListView params ------
+      // this.scrollDirection,
+      this.reverse = false,
+      this.primary,
+      this.physics,
+      this.shrinkWrap = false,
+      this.padding,
+      this.separatorBuilder,
+      this.addAutomaticKeepAlives = true,
+      this.addRepaintBoundaries = true,
+      this.addSemanticIndexes = true,
+      this.cacheExtent,
+      this.dragStartBehavior = DragStartBehavior.start,
+      this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+      this.restorationId,
+      this.clipBehavior = Clip.hardEdge})
+      : super(key: key);
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
@@ -55,7 +96,21 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     // SliverList
     return Stack(
       children: [
-        ListView.builder(
+        ListView.separated(
+          reverse: widget.reverse,
+          primary: widget.primary,
+          physics: widget.physics,
+          shrinkWrap: widget.shrinkWrap,
+          padding: widget.padding,
+          separatorBuilder: widget.separatorBuilder,
+          addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
+          addRepaintBoundaries: widget.addRepaintBoundaries,
+          addSemanticIndexes: widget.addSemanticIndexes,
+          cacheExtent: widget.cacheExtent,
+          dragStartBehavior: widget.dragStartBehavior,
+          keyboardDismissBehavior: widget.keyboardDismissBehavior,
+          restorationId: widget.restorationId,
+          clipBehavior: widget.clipBehavior,
           controller: scrollController,
           itemBuilder: (BuildContext context, int index) {
             ItemInfo itemInfo = controllerImp.compute(index);
