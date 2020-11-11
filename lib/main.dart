@@ -144,7 +144,7 @@ class MyDataBuilder implements ExpendableListDataBuilder {
   @override
   Widget buildSectionChild(int sectionIndex, int childIndex) {
     return ListTile(
-      title: Text('item $sectionIndex - $childIndex'),
+      title: Text(data[sectionIndex][childIndex]),
     );
   }
 
