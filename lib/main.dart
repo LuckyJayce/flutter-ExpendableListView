@@ -48,6 +48,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  List<List<String>> data = [];
   ExpandableListController controller =
       ExpandableListController(expendAll: true);
   int times = 0;
@@ -56,9 +57,7 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    List<List<String>> data = buildData();
-    dataBuilder.data.clear();
-    dataBuilder.data.addAll(data);
+    data = buildData();
   }
 
   @override
@@ -96,16 +95,14 @@ class _HomeState extends State<Home> {
               TextButton(
                   onPressed: () {
                     setState(() {
-                      List<List<String>> data = buildData();
-                      dataBuilder.data.clear();
-                      dataBuilder.data.addAll(data);
+                      data = buildData();
                     });
                   },
                   child: Text('更新数据')),
               TextButton(
                   onPressed: () {
                     setState(() {
-                      dataBuilder.data.clear();
+                      data.clear();
                     });
                   },
                   child: Text('更新为空数据')),
@@ -115,7 +112,28 @@ class _HomeState extends State<Home> {
             child: ExpendableListView.build(
               controller: controller,
               sticky: true,
-              builder: dataBuilder,
+              builder: ExpendableItemBuilder.build(
+                sectionCount: () => data.length,
+                sectionChildrenCount: (sectionIndex) =>
+                    data[sectionIndex].length,
+                headerBuilder:
+                    (BuildContext context, int sectionIndex, bool expended) {
+                  return Container(
+                    decoration: BoxDecoration(color: Colors.grey),
+                    child: ListTile(
+                        title: Text('section:$sectionIndex'),
+                        trailing: ExpandIcon(
+                          // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
+                          key: ValueKey(sectionIndex),
+                          isExpanded: expended,
+                          onPressed: null,
+                        )),
+                  );
+                },
+                childBuilder: (context, sectionIndex, childIndex) => ListTile(
+                  title: Text(data[sectionIndex][childIndex]),
+                ),
+              ),
             ),
           )
         ],
@@ -137,42 +155,41 @@ class _HomeState extends State<Home> {
   }
 }
 
-class ItemBuilder implements ExpendableItemBuilder {
-  List<List<String>> data = [];
-
-  ItemBuilder();
-
-  @override
-  Widget buildSectionChild(
-      BuildContext context, int sectionIndex, int childIndex) {
-    return ListTile(
-      title: Text(data[sectionIndex][childIndex]),
-    );
-  }
-
-  @override
-  Widget buildSectionHeader(
-      BuildContext context, int sectionIndex, bool expended) {
-    return Container(
-      decoration: BoxDecoration(color: Colors.grey),
-      child: ListTile(
-          title: Text('section:$sectionIndex'),
-          trailing: ExpandIcon(
-            // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
-            key: ValueKey(sectionIndex),
-            isExpanded: expended,
-            onPressed: null,
-          )),
-    );
-  }
-
-  @override
-  int getSectionChildCount(int sectionIndex) {
-    return data[sectionIndex].length;
-  }
-
-  @override
-  int getSectionCount() {
-    return data.length;
-  }
-}
+//写法2
+// class MyItemBuilder implements ExpendableItemBuilder {
+//   List<List<String>> data = [];
+//
+//   @override
+//   Widget buildSectionChild(
+//       BuildContext context, int sectionIndex, int childIndex) {
+//     return ListTile(
+//       title: Text(data[sectionIndex][childIndex]),
+//     );
+//   }
+//
+//   @override
+//   Widget buildSectionHeader(
+//       BuildContext context, int sectionIndex, bool expended) {
+//     return Container(
+//       decoration: BoxDecoration(color: Colors.grey),
+//       child: ListTile(
+//           title: Text('section:$sectionIndex'),
+//           trailing: ExpandIcon(
+//             // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
+//             key: ValueKey(sectionIndex),
+//             isExpanded: expended,
+//             onPressed: null,
+//           )),
+//     );
+//   }
+//
+//   @override
+//   int getSectionChildCount(int sectionIndex) {
+//     return data[sectionIndex].length;
+//   }
+//
+//   @override
+//   int getSectionCount() {
+//     return data.length;
+//   }
+// }

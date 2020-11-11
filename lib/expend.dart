@@ -559,10 +559,10 @@ abstract class ExpendableItemBuilder {
       BuildContext context, int sectionIndex, int childIndex);
 
   static ExpendableItemBuilder build(
-      SectionCount sectionCount,
-      ChildrenCount sectionChildrenCount,
-      SectionHeaderBuilder headerBuilder,
-      SectionChildBuilder childBuilder) {
+      {@required SectionCount sectionCount,
+      @required ChildrenCount sectionChildrenCount,
+      @required SectionHeaderBuilder headerBuilder,
+      @required SectionChildBuilder childBuilder}) {
     return _ExpendableListDataBuilderImp(
         sectionCount: sectionCount,
         childrenCount: sectionChildrenCount,
