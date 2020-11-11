@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'render.dart';
 
 class ExpendableListView extends StatefulWidget {
-  final ExpendableListDataBuilder builder;
+  final ExpendableItemBuilder builder;
   final ExpandableListController controller;
   final bool sticky;
 
@@ -364,7 +364,7 @@ class _ControllerImp {
   List<ExpendAllCallback> expendAllCallbackList = [];
   Map<int, double> headerScrollOffsetYList = {};
   bool _expendAll = true;
-  ExpendableListDataBuilder builder;
+  ExpendableItemBuilder builder;
 
   _ControllerImp(this.builder);
 
@@ -547,7 +547,7 @@ typedef ExpendSectionCallback = Function(int sectionIndex, bool expended);
 typedef ExpendAllCallback = Function(bool expendAll);
 
 ///数据加载成功显示的WidgetBuilder
-abstract class ExpendableListDataBuilder {
+abstract class ExpendableItemBuilder {
   int getSectionCount();
 
   int getSectionChildCount(int sectionIndex);
@@ -558,7 +558,7 @@ abstract class ExpendableListDataBuilder {
   Widget buildSectionChild(
       BuildContext context, int sectionIndex, int childIndex);
 
-  static ExpendableListDataBuilder build(
+  static ExpendableItemBuilder build(
       SectionCount sectionCount,
       ChildrenCount sectionChildrenCount,
       SectionHeaderBuilder headerBuilder,
@@ -571,7 +571,7 @@ abstract class ExpendableListDataBuilder {
   }
 }
 
-class _ExpendableListDataBuilderImp extends ExpendableListDataBuilder {
+class _ExpendableListDataBuilderImp extends ExpendableItemBuilder {
   SectionCount sectionCount;
   ChildrenCount childrenCount;
   SectionHeaderBuilder headerBuilder;

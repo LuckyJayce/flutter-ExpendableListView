@@ -51,7 +51,7 @@ class _HomeState extends State<Home> {
   ExpandableListController controller =
       ExpandableListController(expendAll: true);
   int times = 0;
-  MyDataBuilder dataBuilder = MyDataBuilder();
+  ItemBuilder dataBuilder = ItemBuilder();
 
   @override
   void initState() {
@@ -137,10 +137,10 @@ class _HomeState extends State<Home> {
   }
 }
 
-class MyDataBuilder implements ExpendableListDataBuilder {
+class ItemBuilder implements ExpendableItemBuilder {
   List<List<String>> data = [];
 
-  MyDataBuilder();
+  ItemBuilder();
 
   @override
   Widget buildSectionChild(
