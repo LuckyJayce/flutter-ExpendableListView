@@ -8,18 +8,10 @@ import 'package:flutter/widgets.dart';
 import 'render.dart';
 
 class ExpendableListView extends StatefulWidget {
-  final SectionHeaderBuilder headerBuilder;
-  final SectionCount sectionCount;
-  final SectionChildBuilder childBuilder;
-  final SectionChildrenCount sectionChildrenCount;
+  final ExpendableListDataBuilder builder;
   final ExpandableListController controller;
 
-  ExpendableListView(
-      {@required this.sectionCount,
-      @required this.headerBuilder,
-      @required this.sectionChildrenCount,
-      @required this.childBuilder,
-      this.controller});
+  ExpendableListView.build({@required this.builder, this.controller});
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
@@ -32,9 +24,9 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   @override
   void initState() {
     super.initState();
-    controllerImp =
-        _ControllerImp(widget.sectionCount, widget.sectionChildrenCount);
-    controllerImp.addExpendCallback(onExpend);
+    controllerImp = _ControllerImp(widget.builder);
+    controllerImp.addExpendSectionCallback(onExpend);
+    controllerImp.addExpendAllCallback(onExpendAll);
     widget.controller?.setControllerImp(controllerImp);
   }
 
@@ -57,6 +49,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
 
   @override
   Widget build(BuildContext context) {
+    print('build ${controllerImp._expandedMap.toString()}');
     controllerImp.update();
     // SliverList
     return Stack(
@@ -82,6 +75,12 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     }
   }
 
+  void onExpendAll(bool expendAll) {
+    print('onExpendAll :$expendAll');
+    setState(() {});
+    scrollController.jumpTo(0);
+  }
+
   Widget _buildItem(ItemInfo itemInfo) {
     if (itemInfo.isSectionHeader) {
       return _buildHeader(itemInfo);
@@ -98,7 +97,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           controllerImp.setSectionExpanded(itemInfo.sectionIndex,
               !controllerImp.isSectionExpanded(itemInfo.sectionIndex));
         },
-        child: widget.headerBuilder(itemInfo.sectionIndex,
+        child: widget.builder.buildSectionHeader(itemInfo.sectionIndex,
             controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       ),
     );
@@ -108,7 +107,8 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     return RegisteredWidget(
       itemInfo: itemInfo,
       controllerImp: controllerImp,
-      child: widget.childBuilder(itemInfo.sectionIndex, itemInfo.itemIndex),
+      child: widget.builder
+          .buildSectionChild(itemInfo.sectionIndex, itemInfo.itemIndex),
     );
   }
 }
@@ -150,7 +150,8 @@ class _StickHeaderState extends State<_StickHeader> {
   @override
   void initState() {
     widget.scrollController.addListener(onScroll);
-    widget._controllerImp.addExpendCallback(onExpended);
+    widget._controllerImp.addExpendSectionCallback(onExpended);
+    widget._controllerImp.addExpendAllCallback(onExpendAll);
     super.initState();
   }
 
@@ -174,11 +175,18 @@ class _StickHeaderState extends State<_StickHeader> {
   @override
   void dispose() {
     widget.scrollController.removeListener(onScroll);
-    widget._controllerImp.removeExpendCallback(onExpended);
+    widget._controllerImp.removeExpendSectionCallback(onExpended);
+    widget._controllerImp.removeExpendAllCallback(onExpendAll);
     super.dispose();
   }
 
   void onExpended(int sectionIndex, bool expended) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      onScroll();
+    });
+  }
+
+  void onExpendAll(bool expendAll) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       onScroll();
     });
@@ -272,7 +280,8 @@ class _HeaderClipper extends CustomClipper<Rect> {
 
 class ExpandableListController {
   _ControllerImp _controllerImp;
-  List<ExpendCallback> expendCallbackList = [];
+  List<ExpendSectionCallback> _expendCallbackList = [];
+  List<ExpendAllCallback> _expendAllCallbackList = [];
 
   bool isSectionExpanded(int sectionIndex) {
     return _controllerImp?.isSectionExpanded(sectionIndex);
@@ -280,54 +289,73 @@ class ExpandableListController {
 
   void setSectionExpanded(int sectionIndex, bool expanded) {
     _controllerImp?.setSectionExpanded(sectionIndex, expanded);
-    _controllerImp.expendCallbackList.addAll(expendCallbackList);
-    expendCallbackList.clear();
+    _controllerImp.expendSectionCallbackList.addAll(_expendCallbackList);
+    _expendCallbackList.clear();
   }
 
   void setControllerImp(_ControllerImp controllerImp) {
     _controllerImp = controllerImp;
   }
 
-  void addExpendCallback(ExpendCallback callback) {
+  void addExpendSectionCallback(ExpendSectionCallback callback) {
     if (_controllerImp != null) {
-      _controllerImp.addExpendCallback(callback);
+      _controllerImp.addExpendSectionCallback(callback);
     } else {
-      expendCallbackList.add(callback);
+      _expendCallbackList.add(callback);
     }
   }
 
-  void removeExpendCallback(ExpendCallback callback) {
-    expendCallbackList.remove(callback);
-    _controllerImp?.removeExpendCallback(callback);
+  void removeExpendSectionCallback(ExpendSectionCallback callback) {
+    _expendCallbackList.remove(callback);
+    _controllerImp?.removeExpendSectionCallback(callback);
+  }
+
+  void addExpendAllCallback(ExpendAllCallback callback) {
+    if (_controllerImp != null) {
+      _controllerImp.addExpendAllCallback(callback);
+    } else {
+      _expendAllCallbackList.add(callback);
+    }
+  }
+
+  void removeExpendAllCallback(ExpendAllCallback callback) {
+    _expendAllCallbackList.remove(callback);
+    _controllerImp?.removeExpendAllCallback(callback);
+  }
+
+  void setExpendAll(bool expendAll) {
+    _controllerImp?.setExpendAll(expendAll);
   }
 
   void _dispose() {
-    expendCallbackList.clear();
+    _expendCallbackList.clear();
   }
 }
 
 ///控制类
 class _ControllerImp {
   int _listChildCount;
-  SectionCount _sectionCount;
-  SectionChildrenCount _sectionChildCount;
   List<int> _sectionHeaderIndexList = [];
   Map<int, bool> _expandedMap = {};
   Map<int, ItemInfo> itemInfoCache = {};
   Set<_RegisteredElement> elements = {};
   _RegisteredElement first;
-  List<ExpendCallback> expendCallbackList = [];
+  List<ExpendSectionCallback> expendSectionCallbackList = [];
+  List<ExpendAllCallback> expendAllCallbackList = [];
   Map<int, double> headerScrollOffsetYList = {};
+  bool _expendAll = true;
+  ExpendableListDataBuilder builder;
 
-  _ControllerImp(this._sectionCount, this._sectionChildCount);
+  _ControllerImp(this.builder);
 
   void update() {
     _listChildCount = 0;
     itemInfoCache.clear();
     _sectionHeaderIndexList.clear();
-    int sc = _sectionCount();
+    int sc = builder.getSectionCount();
+    print('update sc:$sc');
     for (int s = 0; s < sc; s++) {
-      int childCount = _sectionChildCount(s);
+      int childCount = builder.getSectionChildCount(s);
       _sectionHeaderIndexList.add(_listChildCount);
       if (isSectionExpanded(s)) {
         _listChildCount += childCount + 1;
@@ -337,20 +365,37 @@ class _ControllerImp {
     }
   }
 
+  void setExpendAll(bool expendAll) {
+    _expendAll = expendAll;
+    _expandedMap.clear();
+    for (var callback in expendAllCallbackList) {
+      callback(expendAll);
+    }
+  }
+
   void setSectionHeaderOffsetY(int sectionIndex, double scrollOffsetY) {
     headerScrollOffsetYList[sectionIndex] = scrollOffsetY;
   }
 
-  void addExpendCallback(ExpendCallback callback) {
-    expendCallbackList.add(callback);
+  void addExpendSectionCallback(ExpendSectionCallback callback) {
+    expendSectionCallbackList.add(callback);
   }
 
-  void removeExpendCallback(ExpendCallback callback) {
-    expendCallbackList.remove(callback);
+  void removeExpendSectionCallback(ExpendSectionCallback callback) {
+    expendSectionCallbackList.remove(callback);
+  }
+
+  void addExpendAllCallback(ExpendAllCallback callback) {
+    expendAllCallbackList.add(callback);
+  }
+
+  void removeExpendAllCallback(ExpendAllCallback callback) {
+    expendAllCallbackList.remove(callback);
   }
 
   void dispose() {
-    expendCallbackList.clear();
+    expendSectionCallbackList.clear();
+    expendAllCallbackList.clear();
   }
 
   int getSectionHeaderIndex(int sectionIndex) {
@@ -397,12 +442,18 @@ class _ControllerImp {
   }
 
   bool isSectionExpanded(int sectionIndex) {
-    return _expandedMap[sectionIndex] == null || _expandedMap[sectionIndex];
+    if (_expendAll) {
+      //_expendAll 为true， null则就是展开
+      return _expandedMap[sectionIndex] == null || _expandedMap[sectionIndex];
+    } else {
+      //_expendAll 为false， null则就是折叠
+      return _expandedMap[sectionIndex] != null && _expandedMap[sectionIndex];
+    }
   }
 
   void setSectionExpanded(int sectionIndex, bool expanded) {
     _expandedMap[sectionIndex] = expanded;
-    expendCallbackList.forEach((callback) {
+    expendSectionCallbackList.forEach((callback) {
       callback(sectionIndex, expanded);
     });
   }
@@ -462,7 +513,7 @@ class _RegisteredElement extends StatelessElement {
 typedef SectionCount = int Function();
 
 ///获取section对应childCount
-typedef SectionChildrenCount = int Function(int sectionIndex);
+typedef ChildrenCount = int Function(int sectionIndex);
 
 ///构建 SectionHeader
 typedef SectionHeaderBuilder = Widget Function(int sectionIndex, bool expended);
@@ -472,4 +523,61 @@ typedef SectionChildBuilder = Widget Function(
     int sectionIndex, int sectionChildIndex);
 
 ///折叠展开回调
-typedef ExpendCallback = Function(int sectionIndex, bool expended);
+typedef ExpendSectionCallback = Function(int sectionIndex, bool expended);
+typedef ExpendAllCallback = Function(bool expendAll);
+
+///数据加载成功显示的WidgetBuilder
+abstract class ExpendableListDataBuilder {
+  int getSectionCount();
+
+  int getSectionChildCount(int sectionIndex);
+
+  Widget buildSectionHeader(int sectionIndex, bool expended);
+
+  Widget buildSectionChild(int sectionIndex, int childIndex);
+
+  static ExpendableListDataBuilder build(
+      SectionCount sectionCount,
+      ChildrenCount sectionChildrenCount,
+      SectionHeaderBuilder headerBuilder,
+      SectionChildBuilder childBuilder) {
+    return _ExpendableListDataBuilderImp(
+        sectionCount: sectionCount,
+        childrenCount: sectionChildrenCount,
+        headerBuilder: headerBuilder,
+        childBuilder: childBuilder);
+  }
+}
+
+class _ExpendableListDataBuilderImp extends ExpendableListDataBuilder {
+  SectionCount sectionCount;
+  ChildrenCount childrenCount;
+  SectionHeaderBuilder headerBuilder;
+  SectionChildBuilder childBuilder;
+
+  _ExpendableListDataBuilderImp(
+      {this.sectionCount,
+      this.childrenCount,
+      this.headerBuilder,
+      this.childBuilder});
+
+  @override
+  Widget buildSectionChild(int sectionIndex, int childIndex) {
+    return childBuilder(sectionIndex, childIndex);
+  }
+
+  @override
+  Widget buildSectionHeader(int sectionIndex, bool expended) {
+    return headerBuilder(sectionIndex, expended);
+  }
+
+  @override
+  int getSectionChildCount(int sectionIndex) {
+    return childrenCount(sectionIndex);
+  }
+
+  @override
+  int getSectionCount() {
+    return sectionCount();
+  }
+}
