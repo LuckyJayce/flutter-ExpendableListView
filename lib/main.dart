@@ -143,14 +143,16 @@ class MyDataBuilder implements ExpendableListDataBuilder {
   MyDataBuilder();
 
   @override
-  Widget buildSectionChild(int sectionIndex, int childIndex) {
+  Widget buildSectionChild(
+      BuildContext context, int sectionIndex, int childIndex) {
     return ListTile(
       title: Text(data[sectionIndex][childIndex]),
     );
   }
 
   @override
-  Widget buildSectionHeader(int sectionIndex, bool expended, bool stickyHeader) {
+  Widget buildSectionHeader(
+      BuildContext context, int sectionIndex, bool expended) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey),
       child: ListTile(

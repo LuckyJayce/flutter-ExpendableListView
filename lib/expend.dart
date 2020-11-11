@@ -59,7 +59,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           controller: scrollController,
           itemBuilder: (BuildContext context, int index) {
             ItemInfo itemInfo = controllerImp.compute(index);
-            return _buildItem(itemInfo);
+            return _buildItem(context, itemInfo);
           },
           itemCount: controllerImp._listChildCount,
         ),
@@ -82,14 +82,14 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     scrollController.jumpTo(0);
   }
 
-  Widget _buildItem(ItemInfo itemInfo) {
+  Widget _buildItem(BuildContext context, ItemInfo itemInfo) {
     if (itemInfo.isSectionHeader) {
-      return _buildHeader(itemInfo, false);
+      return _buildHeader(context, itemInfo);
     }
-    return _buildChild(itemInfo);
+    return _buildChild(context, itemInfo);
   }
 
-  Widget _buildHeader(ItemInfo itemInfo, bool floatHeader) {
+  Widget _buildHeader(BuildContext context, ItemInfo itemInfo) {
     return RegisteredWidget(
       itemInfo: itemInfo,
       controllerImp: controllerImp,
@@ -98,26 +98,24 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           controllerImp.setSectionExpanded(itemInfo.sectionIndex,
               !controllerImp.isSectionExpanded(itemInfo.sectionIndex));
         },
-        child: widget.builder.buildSectionHeader(
-            itemInfo.sectionIndex,
-            controllerImp.isSectionExpanded(itemInfo.sectionIndex),
-            floatHeader),
+        child: widget.builder.buildSectionHeader(context, itemInfo.sectionIndex,
+            controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       ),
     );
   }
 
-  Widget _buildChild(ItemInfo itemInfo) {
+  Widget _buildChild(BuildContext context, ItemInfo itemInfo) {
     return RegisteredWidget(
       itemInfo: itemInfo,
       controllerImp: controllerImp,
-      child: widget.builder
-          .buildSectionChild(itemInfo.sectionIndex, itemInfo.itemIndex),
+      child: widget.builder.buildSectionChild(
+          context, itemInfo.sectionIndex, itemInfo.itemIndex),
     );
   }
 }
 
 typedef _SectionHeaderBuilderImp = Widget Function(
-    ItemInfo itemInfo, bool floatHeader);
+    BuildContext context, ItemInfo itemInfo);
 
 class ItemInfo {
   final int index;
@@ -168,7 +166,7 @@ class _StickHeaderState extends State<_StickHeader> {
     if (itemInfo != null &&
         widget._controllerImp.builder.getSectionCount() > 0) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
-        header = widget.builder(itemInfo, true);
+        header = widget.builder(context, itemInfo);
       }
       return DisplayHeightWidget(
         displayHeight: headerDisplayHeight,
@@ -538,11 +536,11 @@ typedef ChildrenCount = int Function(int sectionIndex);
 
 ///构建 SectionHeader
 typedef SectionHeaderBuilder = Widget Function(
-    int sectionIndex, bool expended, bool floatHeader);
+    BuildContext context, int sectionIndex, bool expended);
 
 ///构建section下的child
 typedef SectionChildBuilder = Widget Function(
-    int sectionIndex, int sectionChildIndex);
+    BuildContext context, int sectionIndex, int sectionChildIndex);
 
 ///折叠展开回调
 typedef ExpendSectionCallback = Function(int sectionIndex, bool expended);
@@ -554,9 +552,11 @@ abstract class ExpendableListDataBuilder {
 
   int getSectionChildCount(int sectionIndex);
 
-  Widget buildSectionHeader(int sectionIndex, bool expended, bool floatHeader);
+  Widget buildSectionHeader(
+      BuildContext context, int sectionIndex, bool expended);
 
-  Widget buildSectionChild(int sectionIndex, int childIndex);
+  Widget buildSectionChild(
+      BuildContext context, int sectionIndex, int childIndex);
 
   static ExpendableListDataBuilder build(
       SectionCount sectionCount,
@@ -584,13 +584,15 @@ class _ExpendableListDataBuilderImp extends ExpendableListDataBuilder {
       this.childBuilder});
 
   @override
-  Widget buildSectionChild(int sectionIndex, int childIndex) {
-    return childBuilder(sectionIndex, childIndex);
+  Widget buildSectionChild(
+      BuildContext context, int sectionIndex, int childIndex) {
+    return childBuilder(context, sectionIndex, childIndex);
   }
 
   @override
-  Widget buildSectionHeader(int sectionIndex, bool expended, bool floatHeader) {
-    return headerBuilder(sectionIndex, expended, floatHeader);
+  Widget buildSectionHeader(
+      BuildContext context, int sectionIndex, bool expended) {
+    return headerBuilder(context, sectionIndex, expended);
   }
 
   @override
