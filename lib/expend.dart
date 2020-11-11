@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:load_data_test/render.dart';
 
@@ -32,7 +33,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     super.initState();
     controllerImp = _ExpandableListControllerImp(
         widget.sectionCount, widget.sectionChildrenCount);
-    controllerImp.setExpendCallback(onExpend);
+    controllerImp.addExpendCallback(onExpend);
     widget.controller?.setControllerImp(controllerImp);
   }
 
@@ -49,7 +50,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   void dispose() {
     super.dispose();
     widget.controller?.setControllerImp(null);
-    controllerImp.setExpendCallback(null);
+    controllerImp.removeExpendCallback(null);
   }
 
   @override
@@ -173,6 +174,7 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   void initState() {
     widget.scrollController.addListener(onScroll);
+    widget._controllerImp.addExpendCallback(onExpend);
     super.initState();
   }
 
@@ -198,7 +200,14 @@ class _StickHeaderState extends State<StickHeader> {
   @override
   void dispose() {
     widget.scrollController.removeListener(onScroll);
+    widget._controllerImp.removeExpendCallback(onExpend);
     super.dispose();
+  }
+
+  void onExpend(int sectionIndex, bool expend) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      onScroll();
+    });
   }
 
   void onScroll() {
@@ -290,17 +299,13 @@ class _ExpandableListControllerImp {
   SectionCount _sectionCount;
   SectionChildrenCount _sectionChildCount;
   List<int> _sectionHeaderIndexList = [];
-  ExpendCallback _expendCallback;
   Map<int, bool> _expandedMap = {};
   Map<int, ItemInfo> itemInfoCache = {};
   Set<_RegisteredElement> elements = {};
   _RegisteredElement first;
+  List<ExpendCallback> expendCallbackList = [];
 
   _ExpandableListControllerImp(this._sectionCount, this._sectionChildCount);
-
-  void setExpendCallback(ExpendCallback expendCallback) {
-    this._expendCallback = expendCallback;
-  }
 
   void update() {
     _listChildCount = 0;
@@ -316,6 +321,14 @@ class _ExpandableListControllerImp {
         _listChildCount += 1;
       }
     }
+  }
+
+  void addExpendCallback(ExpendCallback callback) {
+    expendCallbackList.add(callback);
+  }
+
+  void removeExpendCallback(ExpendCallback callback) {
+    expendCallbackList.remove(callback);
   }
 
   int getSectionHeaderIndex(int sectionIndex) {
@@ -367,9 +380,9 @@ class _ExpandableListControllerImp {
 
   void setSectionExpanded(int sectionIndex, bool expanded) {
     _expandedMap[sectionIndex] = expanded;
-    if (_expendCallback != null) {
-      _expendCallback(sectionIndex, expanded);
-    }
+    expendCallbackList.forEach((callback) {
+      callback(sectionIndex, expanded);
+    });
   }
 }
 
