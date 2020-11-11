@@ -51,7 +51,8 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   void dispose() {
     super.dispose();
     widget.controller?.setControllerImp(null);
-    controllerImp.removeExpendCallback(null);
+    controllerImp.dispose();
+    widget.controller._dispose();
   }
 
   @override
@@ -68,7 +69,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           },
           itemCount: controllerImp._listChildCount,
         ),
-        StickHeader(scrollController, _buildHeader, controllerImp),
+        _StickHeader(scrollController, _buildHeader, controllerImp),
       ],
     );
   }
@@ -128,38 +129,19 @@ class ItemInfo {
   }
 }
 
-class StickHeader extends StatefulWidget {
+/// _StickHeader 浮在顶部的header，滚动变化内部会自动更新sectionHeader
+class _StickHeader extends StatefulWidget {
   final ScrollController scrollController;
   final _SectionHeaderBuilderImp builder;
   final _ControllerImp _controllerImp;
 
-  StickHeader(this.scrollController, this.builder, this._controllerImp);
+  _StickHeader(this.scrollController, this.builder, this._controllerImp);
 
   @override
   _StickHeaderState createState() => _StickHeaderState();
 }
 
-class HeaderClipper extends CustomClipper<Rect> {
-  double headerDisplayHeight;
-
-  HeaderClipper(this.headerDisplayHeight);
-
-  @override
-  Rect getClip(Size size) {
-    if (headerDisplayHeight > 0) {
-      return Rect.fromLTRB(
-          0, size.height - headerDisplayHeight, size.width, size.height);
-    }
-    return Rect.fromLTRB(0, 0, size.width, size.height);
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) {
-    return true;
-  }
-}
-
-class _StickHeaderState extends State<StickHeader> {
+class _StickHeaderState extends State<_StickHeader> {
   ItemInfo itemInfo;
   double headerDisplayHeight = -1;
   Widget header;
@@ -181,7 +163,7 @@ class _StickHeaderState extends State<StickHeader> {
       return DisplayHeightWidget(
         displayHeight: headerDisplayHeight,
         child: ClipRect(
-          clipper: HeaderClipper(headerDisplayHeight),
+          clipper: _HeaderClipper(headerDisplayHeight),
           child: header,
         ),
       );
@@ -229,6 +211,7 @@ class _StickHeaderState extends State<StickHeader> {
             firstVisibleElement = element;
             firstItemOffsetY = itemOffset;
           }
+          //记录section的位置 方便折叠时候滚动定位
           if (itemInfo.isSectionHeader) {
             double scrollY = widget.scrollController.position.pixels;
             double sectionHeaderScrollOffsetY = scrollY + firstItemOffsetY;
@@ -266,19 +249,60 @@ class _StickHeaderState extends State<StickHeader> {
   }
 }
 
+///裁切浮动header溢出的部分
+class _HeaderClipper extends CustomClipper<Rect> {
+  double headerDisplayHeight;
+
+  _HeaderClipper(this.headerDisplayHeight);
+
+  @override
+  Rect getClip(Size size) {
+    if (headerDisplayHeight > 0) {
+      return Rect.fromLTRB(
+          0, size.height - headerDisplayHeight, size.width, size.height);
+    }
+    return Rect.fromLTRB(0, 0, size.width, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) {
+    return true;
+  }
+}
+
 class ExpandableListController {
   _ControllerImp _controllerImp;
+  List<ExpendCallback> expendCallbackList = [];
 
   bool isSectionExpanded(int sectionIndex) {
-    return _controllerImp.isSectionExpanded(sectionIndex);
+    return _controllerImp?.isSectionExpanded(sectionIndex);
   }
 
   void setSectionExpanded(int sectionIndex, bool expanded) {
-    _controllerImp.setSectionExpanded(sectionIndex, expanded);
+    _controllerImp?.setSectionExpanded(sectionIndex, expanded);
+    _controllerImp.expendCallbackList.addAll(expendCallbackList);
+    expendCallbackList.clear();
   }
 
   void setControllerImp(_ControllerImp controllerImp) {
     _controllerImp = controllerImp;
+  }
+
+  void addExpendCallback(ExpendCallback callback) {
+    if (_controllerImp != null) {
+      _controllerImp.addExpendCallback(callback);
+    } else {
+      expendCallbackList.add(callback);
+    }
+  }
+
+  void removeExpendCallback(ExpendCallback callback) {
+    expendCallbackList.remove(callback);
+    _controllerImp?.removeExpendCallback(callback);
+  }
+
+  void _dispose() {
+    expendCallbackList.clear();
   }
 }
 
@@ -323,6 +347,10 @@ class _ControllerImp {
 
   void removeExpendCallback(ExpendCallback callback) {
     expendCallbackList.remove(callback);
+  }
+
+  void dispose() {
+    expendCallbackList.clear();
   }
 
   int getSectionHeaderIndex(int sectionIndex) {
