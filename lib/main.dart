@@ -52,7 +52,7 @@ class _HomeState extends State<Home> {
   ExpandableListController controller =
       ExpandableListController(expendAll: true);
   int times = 0;
-  ItemBuilder dataBuilder = ItemBuilder();
+  bool sticky = true;
 
   @override
   void initState() {
@@ -93,25 +93,36 @@ class _HomeState extends State<Home> {
           Row(
             children: [
               TextButton(
-                  onPressed: () {
-                    setState(() {
-                      data = buildData();
-                    });
-                  },
-                  child: Text('更新数据')),
+                onPressed: () {
+                  setState(() {
+                    data = buildData();
+                  });
+                },
+                child: Text('更新数据'),
+              ),
               TextButton(
-                  onPressed: () {
+                onPressed: () {
+                  setState(() {
+                    data.clear();
+                  });
+                },
+                child: Text('更新为空数据'),
+              ),
+              Spacer(),
+              Text('sticky'),
+              Switch(
+                  value: sticky,
+                  onChanged: (value) {
                     setState(() {
-                      data.clear();
+                      sticky = value;
                     });
-                  },
-                  child: Text('更新为空数据')),
+                  })
             ],
           ),
           Expanded(
             child: ExpendableListView.build(
               controller: controller,
-              sticky: true,
+              sticky: sticky,
               builder: ExpendableItemBuilder.build(
                 sectionCount: () => data.length,
                 sectionChildrenCount: (sectionIndex) =>
