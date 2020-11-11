@@ -77,8 +77,12 @@ class _HomeState extends State<Home> {
             headerBuilder: (sectionIndex, expend) => Container(
               decoration: BoxDecoration(color: Colors.grey),
               child: ListTile(
-                title: Text('section:$sectionIndex'),
-              ),
+                  title: Text('section:$sectionIndex'),
+                  trailing: ExpandIcon(
+                    isExpanded: expend,
+                    color: Colors.white,
+                    onPressed: null,
+                  )),
             ),
             childBuilder: (sectionIndex, childIndex) => ListTile(
               title: Text('item $sectionIndex - $childIndex'),
