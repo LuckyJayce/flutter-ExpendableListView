@@ -80,7 +80,6 @@ class _HomeState extends State<Home> {
                   title: Text('section:$sectionIndex'),
                   trailing: ExpandIcon(
                     isExpanded: expend,
-                    color: Colors.white,
                     onPressed: null,
                   )),
             ),
