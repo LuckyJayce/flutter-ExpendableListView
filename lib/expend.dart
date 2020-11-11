@@ -10,8 +10,10 @@ import 'render.dart';
 class ExpendableListView extends StatefulWidget {
   final ExpendableListDataBuilder builder;
   final ExpandableListController controller;
+  final bool sticky;
 
-  ExpendableListView.build({@required this.builder, this.controller});
+  ExpendableListView.build(
+      {@required this.builder, this.controller, this.sticky = true});
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
@@ -61,7 +63,8 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           },
           itemCount: controllerImp._listChildCount,
         ),
-        _StickHeader(scrollController, _buildHeader, controllerImp),
+        if (widget.sticky)
+          _StickHeader(scrollController, _buildHeader, controllerImp),
       ],
     );
   }
@@ -158,6 +161,10 @@ class _StickHeaderState extends State<_StickHeader> {
 
   @override
   Widget build(BuildContext context) {
+    if (itemInfo == null &&
+        widget._controllerImp.builder.getSectionCount() > 0) {
+      check();
+    }
     if (itemInfo != null &&
         widget._controllerImp.builder.getSectionCount() > 0) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
@@ -195,6 +202,11 @@ class _StickHeaderState extends State<_StickHeader> {
   }
 
   void onScroll() {
+    check();
+    setState(() {});
+  }
+
+  void check() {
     _RegisteredElement firstVisibleElement;
     ItemInfo firstVisibleItemInfo;
     double firstItemOffsetY;
@@ -232,33 +244,28 @@ class _StickHeaderState extends State<_StickHeader> {
       }
     });
 
-    if (firstVisibleElement == null || firstVisibleItemInfo == null) {
-      setState(() {
-        itemInfo = null;
-      });
-      return;
-    }
-    ItemInfo nextItemInfo =
-        widget._controllerImp.compute(firstVisibleItemInfo.index + 1);
+    if (firstVisibleElement != null && firstVisibleItemInfo != null) {
+      ItemInfo nextItemInfo =
+          widget._controllerImp.compute(firstVisibleItemInfo.index + 1);
 
-    if (nextItemInfo.isSectionHeader) {
-      final RenderBox box = firstVisibleElement.renderObject;
-      if (firstItemOffsetY <= 0) {
-        headerDisplayHeight = box.size.height + firstItemOffsetY;
+      if (nextItemInfo.isSectionHeader) {
+        final RenderBox box = firstVisibleElement.renderObject;
+        if (firstItemOffsetY <= 0) {
+          headerDisplayHeight = box.size.height + firstItemOffsetY;
+        }
       }
-    }
-    if (itemInfo == null ||
-        (firstVisibleItemInfo.sectionIndex != itemInfo.sectionIndex)) {
+      if (itemInfo == null ||
+          (firstVisibleItemInfo.sectionIndex != itemInfo.sectionIndex)) {
+        if (!nextItemInfo.isSectionHeader && headerDisplayHeight > 0) {
+          headerDisplayHeight = -1;
+        }
+        itemInfo = firstVisibleItemInfo;
+      }
       if (!nextItemInfo.isSectionHeader && headerDisplayHeight > 0) {
         headerDisplayHeight = -1;
+        return;
       }
-      itemInfo = firstVisibleItemInfo;
     }
-    if (!nextItemInfo.isSectionHeader && headerDisplayHeight > 0) {
-      headerDisplayHeight = -1;
-      return;
-    }
-    setState(() {});
   }
 }
 

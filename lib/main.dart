@@ -114,6 +114,7 @@ class _HomeState extends State<Home> {
           Expanded(
             child: ExpendableListView.build(
               controller: controller,
+              sticky: true,
               builder: dataBuilder,
             ),
           )
@@ -149,7 +150,7 @@ class MyDataBuilder implements ExpendableListDataBuilder {
   }
 
   @override
-  Widget buildSectionHeader(int sectionIndex, bool expended, bool floatHeader) {
+  Widget buildSectionHeader(int sectionIndex, bool expended, bool stickyHeader) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey),
       child: ListTile(
