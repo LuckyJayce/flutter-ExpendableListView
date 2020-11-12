@@ -239,7 +239,10 @@ class _StickHeaderState extends State<_StickHeader> {
         widget._controllerImp.builder.getSectionCount() > 0) {
       check();
     }
-    if (itemInfo != null &&
+    //已经在顶部就显示原有的header，不用显示stickyHeader
+    bool needShowStickyHeader = widget.scrollController.position.pixels > 0;
+    if (needShowStickyHeader &&
+        itemInfo != null &&
         widget._controllerImp.builder.getSectionCount() > 0) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
         header = widget.builder(context, itemInfo);
