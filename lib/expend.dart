@@ -21,9 +21,7 @@ class ExpendableListView extends StatefulWidget {
   final ScrollPhysics physics;
   final bool shrinkWrap;
   final EdgeInsetsGeometry padding;
-  @required
   final IndexedWidgetBuilder separatorBuilder;
-  @required
   final bool addAutomaticKeepAlives;
   final bool addRepaintBoundaries;
   final bool addSemanticIndexes;
@@ -96,28 +94,51 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     // SliverList
     return Stack(
       children: [
-        ListView.separated(
-          reverse: widget.reverse,
-          primary: widget.primary,
-          physics: widget.physics,
-          shrinkWrap: widget.shrinkWrap,
-          padding: widget.padding,
-          separatorBuilder: widget.separatorBuilder,
-          addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
-          addRepaintBoundaries: widget.addRepaintBoundaries,
-          addSemanticIndexes: widget.addSemanticIndexes,
-          cacheExtent: widget.cacheExtent,
-          dragStartBehavior: widget.dragStartBehavior,
-          keyboardDismissBehavior: widget.keyboardDismissBehavior,
-          restorationId: widget.restorationId,
-          clipBehavior: widget.clipBehavior,
-          controller: scrollController,
-          itemBuilder: (BuildContext context, int index) {
-            ItemInfo itemInfo = controllerImp.compute(index);
-            return _buildItem(context, itemInfo);
-          },
-          itemCount: controllerImp._listChildCount,
-        ),
+        if (widget.separatorBuilder == null)
+          ListView.builder(
+            reverse: widget.reverse,
+            primary: widget.primary,
+            physics: widget.physics,
+            shrinkWrap: widget.shrinkWrap,
+            padding: widget.padding,
+            addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
+            addRepaintBoundaries: widget.addRepaintBoundaries,
+            addSemanticIndexes: widget.addSemanticIndexes,
+            cacheExtent: widget.cacheExtent,
+            dragStartBehavior: widget.dragStartBehavior,
+            keyboardDismissBehavior: widget.keyboardDismissBehavior,
+            restorationId: widget.restorationId,
+            clipBehavior: widget.clipBehavior,
+            controller: scrollController,
+            itemBuilder: (BuildContext context, int index) {
+              ItemInfo itemInfo = controllerImp.compute(index);
+              return _buildItem(context, itemInfo);
+            },
+            itemCount: controllerImp._listChildCount,
+          ),
+        if (widget.separatorBuilder != null)
+          ListView.separated(
+            reverse: widget.reverse,
+            primary: widget.primary,
+            physics: widget.physics,
+            shrinkWrap: widget.shrinkWrap,
+            padding: widget.padding,
+            separatorBuilder: widget.separatorBuilder,
+            addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
+            addRepaintBoundaries: widget.addRepaintBoundaries,
+            addSemanticIndexes: widget.addSemanticIndexes,
+            cacheExtent: widget.cacheExtent,
+            dragStartBehavior: widget.dragStartBehavior,
+            keyboardDismissBehavior: widget.keyboardDismissBehavior,
+            restorationId: widget.restorationId,
+            clipBehavior: widget.clipBehavior,
+            controller: scrollController,
+            itemBuilder: (BuildContext context, int index) {
+              ItemInfo itemInfo = controllerImp.compute(index);
+              return _buildItem(context, itemInfo);
+            },
+            itemCount: controllerImp._listChildCount,
+          ),
         if (widget.sticky)
           _StickHeader(scrollController, _buildHeader, controllerImp),
       ],
