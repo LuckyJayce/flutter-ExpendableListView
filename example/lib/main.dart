@@ -134,8 +134,8 @@ class _HomeState extends State<Home> {
   List<List<String>> buildData() {
     times++;
     math.Random random = math.Random();
-    int sectionCount = random.nextInt(10) + 3;
-    int sectionChildCount = random.nextInt(30) + 10;
+    int sectionCount = 6;
+    int sectionChildCount = 3;
     print(
         'buildData sectionCount:$sectionCount  sectionChildCount:$sectionChildCount');
     return List.generate(sectionCount, (section) {
@@ -151,16 +151,17 @@ class MyListDelegate implements ExpendableListDelegate {
   MyListDelegate(this.data);
 
   @override
-  Widget buildSectionChild(
-      BuildContext context, int sectionIndex, int childIndex) {
-    return ListTile(
-      title: Text(data[sectionIndex][childIndex]),
-    );
+  int getSectionChildCount(int sectionIndex) {
+    return data[sectionIndex].length;
   }
 
   @override
-  Widget buildSectionHeader(
-      BuildContext context, int sectionIndex, bool expended) {
+  int getSectionCount() {
+    return data.length;
+  }
+
+  @override
+  Widget buildSectionHeader(BuildContext context, int sectionIndex, bool expended) {
     return Container(
       decoration: BoxDecoration(color: Colors.grey),
       child: ListTile(
@@ -175,12 +176,14 @@ class MyListDelegate implements ExpendableListDelegate {
   }
 
   @override
-  int getSectionChildCount(int sectionIndex) {
-    return data[sectionIndex].length;
-  }
-
-  @override
-  int getSectionCount() {
-    return data.length;
+  Widget buildSectionChild(BuildContext context, int sectionIndex, int childIndex) {
+    return ListTile(
+      title: Text(data[sectionIndex][childIndex]),
+    );
   }
 }
+ExpendableListView(
+  controller: controller,
+  sticky: sticky,
+  delegate: MyListDelegate(data),
+)
