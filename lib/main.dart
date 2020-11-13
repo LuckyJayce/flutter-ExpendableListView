@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'expend.dart';
@@ -120,10 +119,11 @@ class _HomeState extends State<Home> {
             ],
           ),
           Expanded(
-            child: ExpendableListView.build(
+            child: ExpendableListView(
               controller: controller,
               sticky: sticky,
-              builder: ExpendableItemBuilder.build(
+              // delegate: MyListDelegate(), 写法2
+              delegate: ExpendableListDelegate.build(
                 sectionCount: () => data.length,
                 sectionChildrenCount: (section) => data[section].length,
                 headerBuilder:
@@ -166,40 +166,40 @@ class _HomeState extends State<Home> {
 }
 
 //写法2
-// class MyItemBuilder implements ExpendableItemBuilder {
-//   List<List<String>> data = [];
-//
-//   @override
-//   Widget buildSectionChild(
-//       BuildContext context, int sectionIndex, int childIndex) {
-//     return ListTile(
-//       title: Text(data[sectionIndex][childIndex]),
-//     );
-//   }
-//
-//   @override
-//   Widget buildSectionHeader(
-//       BuildContext context, int sectionIndex, bool expended) {
-//     return Container(
-//       decoration: BoxDecoration(color: Colors.grey),
-//       child: ListTile(
-//           title: Text('section:$sectionIndex'),
-//           trailing: ExpandIcon(
-//             // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
-//             key: ValueKey(sectionIndex),
-//             isExpanded: expended,
-//             onPressed: null,
-//           )),
-//     );
-//   }
-//
-//   @override
-//   int getSectionChildCount(int sectionIndex) {
-//     return data[sectionIndex].length;
-//   }
-//
-//   @override
-//   int getSectionCount() {
-//     return data.length;
-//   }
-// }
+class MyListDelegate implements ExpendableListDelegate {
+  List<List<String>> data = [];
+
+  @override
+  Widget buildSectionChild(
+      BuildContext context, int sectionIndex, int childIndex) {
+    return ListTile(
+      title: Text(data[sectionIndex][childIndex]),
+    );
+  }
+
+  @override
+  Widget buildSectionHeader(
+      BuildContext context, int sectionIndex, bool expended) {
+    return Container(
+      decoration: BoxDecoration(color: Colors.grey),
+      child: ListTile(
+          title: Text('section:$sectionIndex'),
+          trailing: ExpandIcon(
+            // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
+            key: ValueKey(sectionIndex),
+            isExpanded: expended,
+            onPressed: null,
+          )),
+    );
+  }
+
+  @override
+  int getSectionChildCount(int sectionIndex) {
+    return data[sectionIndex].length;
+  }
+
+  @override
+  int getSectionCount() {
+    return data.length;
+  }
+}

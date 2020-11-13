@@ -9,7 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'render.dart';
 
 class ExpendableListView extends StatefulWidget {
-  final ExpendableItemBuilder builder;
+  final ExpendableListDelegate delegate;
   final ExpandableListController controller;
   final bool sticky;
 
@@ -31,9 +31,9 @@ class ExpendableListView extends StatefulWidget {
   final String restorationId;
   final Clip clipBehavior;
 
-  ExpendableListView.build(
+  ExpendableListView(
       {Key key,
-      @required this.builder,
+      @required this.delegate,
       this.controller,
       this.sticky = true,
       //ListView params ------
@@ -65,7 +65,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   @override
   void initState() {
     super.initState();
-    controllerImp = _ControllerImp(widget.builder);
+    controllerImp = _ControllerImp(widget.delegate);
     widget.controller?.setControllerImp(controllerImp);
     controllerImp.addExpendSectionCallback(onExpend);
     controllerImp.addExpendAllCallback(onExpendAll);
@@ -174,7 +174,9 @@ class _ExpendableListViewState extends State<ExpendableListView> {
           controllerImp.setSectionExpanded(itemInfo.sectionIndex,
               !controllerImp.isSectionExpanded(itemInfo.sectionIndex));
         },
-        child: widget.builder.buildSectionHeader(context, itemInfo.sectionIndex,
+        child: widget.delegate.buildSectionHeader(
+            context,
+            itemInfo.sectionIndex,
             controllerImp.isSectionExpanded(itemInfo.sectionIndex)),
       ),
     );
@@ -184,7 +186,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     return RegisteredWidget(
       itemInfo: itemInfo,
       controllerImp: controllerImp,
-      child: widget.builder.buildSectionChild(
+      child: widget.delegate.buildSectionChild(
           context, itemInfo.sectionIndex, itemInfo.itemIndex),
     );
   }
@@ -443,7 +445,7 @@ class _ControllerImp {
   List<ExpendAllCallback> expendAllCallbackList = [];
   Map<int, double> headerScrollOffsetYList = {};
   bool _expendAll = true;
-  ExpendableItemBuilder builder;
+  ExpendableListDelegate builder;
 
   _ControllerImp(this.builder);
 
@@ -626,7 +628,7 @@ typedef ExpendSectionCallback = Function(int section, bool expended);
 typedef ExpendAllCallback = Function(bool expendAll);
 
 ///数据加载成功显示的WidgetBuilder
-abstract class ExpendableItemBuilder {
+abstract class ExpendableListDelegate {
   int getSectionCount();
 
   int getSectionChildCount(int sectionIndex);
@@ -637,7 +639,7 @@ abstract class ExpendableItemBuilder {
   Widget buildSectionChild(
       BuildContext context, int sectionIndex, int childIndex);
 
-  static ExpendableItemBuilder build(
+  static ExpendableListDelegate build(
       {@required SectionCount sectionCount,
       @required ChildrenCount sectionChildrenCount,
       @required SectionHeaderBuilder headerBuilder,
@@ -650,7 +652,7 @@ abstract class ExpendableItemBuilder {
   }
 }
 
-class _ExpendableListDataBuilderImp extends ExpendableItemBuilder {
+class _ExpendableListDataBuilderImp extends ExpendableListDelegate {
   SectionCount sectionCount;
   ChildrenCount childrenCount;
   SectionHeaderBuilder headerBuilder;
