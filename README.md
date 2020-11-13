@@ -1,9 +1,14 @@
-### 说明
+# flutter_expendable_listview
 
- 通过计算section位置，section也当做listview item，避免ListView + Column(children实现方式)的性能问题
- 借鉴于https://github.com/google/flutter.widgets/tree/master/packages/scrollable_positioned_list
-  RegisterElement解决位置问题，获取ListView的第一个item和滚动偏移量
+A new Flutter package project.
 
-### TODO
-1. 折叠的动画
-2. Sliver
+## Getting Started
+
+This project is a starting point for a Dart
+[package](https://flutter.dev/developing-packages/),
+a library module containing code that can be shared easily across
+multiple Flutter or Dart projects.
+
+For help getting started with Flutter, view our 
+[online documentation](https://flutter.dev/docs), which offers tutorials, 
+samples, guidance on mobile development, and a full API reference.
