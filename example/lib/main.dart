@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:flutter_expendable_listview/expend.dart';
+import 'package:flutter_expendable_listview/expendable_listview.dart';
 
 void main() {
   runApp(MyApp());
