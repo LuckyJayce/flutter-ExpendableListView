@@ -122,28 +122,7 @@ class _HomeState extends State<Home> {
             child: ExpendableListView(
               controller: controller,
               sticky: sticky,
-              // delegate: MyListDelegate(), 写法2
-              delegate: ExpendableListDelegate.build(
-                sectionCount: () => data.length,
-                sectionChildrenCount: (section) => data[section].length,
-                headerBuilder:
-                    (BuildContext context, int section, bool expended) {
-                  return Container(
-                    decoration: BoxDecoration(color: Colors.grey),
-                    child: ListTile(
-                        title: Text('section:$section'),
-                        trailing: ExpandIcon(
-                          // ValueKey(sectionIndex) 可以变为floatHeader导致重新执行动画
-                          key: ValueKey(section),
-                          isExpanded: expended,
-                          onPressed: null,
-                        )),
-                  );
-                },
-                childBuilder: (context, section, childIndex) => ListTile(
-                  title: Text(data[section][childIndex]),
-                ),
-              ),
+              delegate: MyListDelegate(data),
             ),
           )
         ],
@@ -165,9 +144,10 @@ class _HomeState extends State<Home> {
   }
 }
 
-//写法2
 class MyListDelegate implements ExpendableListDelegate {
   List<List<String>> data = [];
+
+  MyListDelegate(this.data);
 
   @override
   Widget buildSectionChild(

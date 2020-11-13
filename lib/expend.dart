@@ -52,7 +52,8 @@ class ExpendableListView extends StatefulWidget {
       this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
       this.restorationId,
       this.clipBehavior = Clip.hardEdge})
-      : super(key: key);
+      : assert(delegate != null),
+        super(key: key);
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
@@ -65,7 +66,8 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   @override
   void initState() {
     super.initState();
-    controllerImp = _ControllerImp(widget.delegate);
+    controllerImp = _ControllerImp();
+    controllerImp.delegate = widget.delegate;
     widget.controller?.setControllerImp(controllerImp);
     controllerImp.addExpendSectionCallback(onExpend);
     controllerImp.addExpendAllCallback(onExpendAll);
@@ -74,6 +76,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   @override
   void didUpdateWidget(covariant ExpendableListView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    controllerImp.delegate = widget.delegate;
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.setControllerImp(null);
       widget.controller?.setControllerImp(controllerImp);
@@ -238,14 +241,14 @@ class _StickHeaderState extends State<_StickHeader> {
   @override
   Widget build(BuildContext context) {
     if (itemInfo == null &&
-        widget._controllerImp.builder.getSectionCount() > 0) {
+        widget._controllerImp.delegate.getSectionCount() > 0) {
       check();
     }
     //已经在顶部就显示原有的header，不用显示stickyHeader
     bool needShowStickyHeader = widget.scrollController.position.pixels > 0;
     if (needShowStickyHeader &&
         itemInfo != null &&
-        widget._controllerImp.builder.getSectionCount() > 0) {
+        widget._controllerImp.delegate.getSectionCount() > 0) {
       if (header == null || displaySectionIndex != itemInfo.sectionIndex) {
         header = widget.builder(context, itemInfo);
       }
@@ -445,17 +448,15 @@ class _ControllerImp {
   List<ExpendAllCallback> expendAllCallbackList = [];
   Map<int, double> headerScrollOffsetYList = {};
   bool _expendAll = true;
-  ExpendableListDelegate builder;
-
-  _ControllerImp(this.builder);
+  ExpendableListDelegate delegate;
 
   void update() {
     _listChildCount = 0;
     itemInfoCache.clear();
     _sectionHeaderIndexList.clear();
-    int sc = builder.getSectionCount();
+    int sc = delegate.getSectionCount();
     for (int s = 0; s < sc; s++) {
-      int childCount = builder.getSectionChildCount(s);
+      int childCount = delegate.getSectionChildCount(s);
       _sectionHeaderIndexList.add(_listChildCount);
       if (isSectionExpanded(s)) {
         _listChildCount += childCount + 1;
