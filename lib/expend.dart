@@ -1,6 +1,5 @@
 import 'dart:core';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -8,57 +7,45 @@ import 'package:flutter/widgets.dart';
 
 import 'render.dart';
 
-class ExpendableListView extends StatefulWidget {
+class ExpendableListView extends BoxScrollView {
+  final ExpendableItemBuilder builder;
+  final ExpandableListController expendController;
+  final bool sticky;
+
+  ExpendableListView({
+    Key key,
+    @required this.builder,
+    this.expendController,
+    this.sticky = true,
+  }) : super(key: key);
+
+  @override
+  Widget buildChildLayout(BuildContext context) {
+    return SliverExpendableList.build(
+      builder: builder,
+      controller: expendController,
+      sticky: sticky,
+    );
+  }
+}
+
+class SliverExpendableList extends StatefulWidget {
   final ExpendableItemBuilder builder;
   final ExpandableListController controller;
   final bool sticky;
 
-  //ListView params
-//  固定垂直方向
-  final Axis scrollDirection = Axis.vertical;
-  final bool reverse;
-  final bool primary;
-  final ScrollPhysics physics;
-  final bool shrinkWrap;
-  final EdgeInsetsGeometry padding;
-  final IndexedWidgetBuilder separatorBuilder;
-  final bool addAutomaticKeepAlives;
-  final bool addRepaintBoundaries;
-  final bool addSemanticIndexes;
-  final double cacheExtent;
-  final DragStartBehavior dragStartBehavior;
-  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
-  final String restorationId;
-  final Clip clipBehavior;
-
-  ExpendableListView.build(
-      {Key key,
-      @required this.builder,
-      this.controller,
-      this.sticky = true,
-      //ListView params ------
-      // this.scrollDirection,
-      this.reverse = false,
-      this.primary,
-      this.physics,
-      this.shrinkWrap = false,
-      this.padding,
-      this.separatorBuilder,
-      this.addAutomaticKeepAlives = true,
-      this.addRepaintBoundaries = true,
-      this.addSemanticIndexes = true,
-      this.cacheExtent,
-      this.dragStartBehavior = DragStartBehavior.start,
-      this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
-      this.restorationId,
-      this.clipBehavior = Clip.hardEdge})
-      : super(key: key);
+  SliverExpendableList.build({
+    Key key,
+    @required this.builder,
+    this.controller,
+    this.sticky = true,
+  }) : super(key: key);
 
   @override
   _ExpendableListViewState createState() => _ExpendableListViewState();
 }
 
-class _ExpendableListViewState extends State<ExpendableListView> {
+class _ExpendableListViewState extends State<SliverExpendableList> {
   ScrollController scrollController = ScrollController();
   _ControllerImp controllerImp;
 
@@ -72,7 +59,7 @@ class _ExpendableListViewState extends State<ExpendableListView> {
   }
 
   @override
-  void didUpdateWidget(covariant ExpendableListView oldWidget) {
+  void didUpdateWidget(covariant SliverExpendableList oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.setControllerImp(null);
@@ -94,51 +81,11 @@ class _ExpendableListViewState extends State<ExpendableListView> {
     // SliverList
     return Stack(
       children: [
-        if (widget.separatorBuilder == null)
-          ListView.builder(
-            reverse: widget.reverse,
-            primary: widget.primary,
-            physics: widget.physics,
-            shrinkWrap: widget.shrinkWrap,
-            padding: widget.padding,
-            addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
-            addRepaintBoundaries: widget.addRepaintBoundaries,
-            addSemanticIndexes: widget.addSemanticIndexes,
-            cacheExtent: widget.cacheExtent,
-            dragStartBehavior: widget.dragStartBehavior,
-            keyboardDismissBehavior: widget.keyboardDismissBehavior,
-            restorationId: widget.restorationId,
-            clipBehavior: widget.clipBehavior,
-            controller: scrollController,
-            itemBuilder: (BuildContext context, int index) {
-              ItemInfo itemInfo = controllerImp.compute(index);
-              return _buildItem(context, itemInfo);
-            },
-            itemCount: controllerImp._listChildCount,
-          ),
-        if (widget.separatorBuilder != null)
-          ListView.separated(
-            reverse: widget.reverse,
-            primary: widget.primary,
-            physics: widget.physics,
-            shrinkWrap: widget.shrinkWrap,
-            padding: widget.padding,
-            separatorBuilder: widget.separatorBuilder,
-            addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
-            addRepaintBoundaries: widget.addRepaintBoundaries,
-            addSemanticIndexes: widget.addSemanticIndexes,
-            cacheExtent: widget.cacheExtent,
-            dragStartBehavior: widget.dragStartBehavior,
-            keyboardDismissBehavior: widget.keyboardDismissBehavior,
-            restorationId: widget.restorationId,
-            clipBehavior: widget.clipBehavior,
-            controller: scrollController,
-            itemBuilder: (BuildContext context, int index) {
-              ItemInfo itemInfo = controllerImp.compute(index);
-              return _buildItem(context, itemInfo);
-            },
-            itemCount: controllerImp._listChildCount,
-          ),
+        SliverList(delegate:
+            SliverChildBuilderDelegate((BuildContext context, int index) {
+          ItemInfo itemInfo = controllerImp.compute(index);
+          return _buildItem(context, itemInfo);
+        })),
         if (widget.sticky)
           _StickHeader(scrollController, _buildHeader, controllerImp),
       ],
@@ -287,7 +234,7 @@ class _StickHeaderState extends State<_StickHeader> {
     _RegisteredElement firstVisibleElement;
     ItemInfo firstVisibleItemInfo;
     double firstItemOffsetY;
-    widget._controllerImp.elements.forEach((_RegisteredElement element) {
+    for (var element in widget._controllerImp.elements) {
       ItemInfo itemInfo = element.getItemInfo();
 
       RenderViewport viewport;
@@ -319,7 +266,7 @@ class _StickHeaderState extends State<_StickHeader> {
           }
         }
       }
-    });
+    }
 
     if (firstVisibleElement != null && firstVisibleItemInfo != null) {
       ItemInfo nextItemInfo =
@@ -551,9 +498,9 @@ class _ControllerImp {
 
   void setSectionExpanded(int sectionIndex, bool expanded) {
     _expandedMap[sectionIndex] = expanded;
-    expendSectionCallbackList.forEach((callback) {
+    for(var callback in expendSectionCallbackList){
       callback(sectionIndex, expanded);
-    });
+    }
   }
 }
 
