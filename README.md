@@ -2,11 +2,11 @@
 
 # ExpendableListView 主要功能
 
-**1. 多个item不卡顿**
+#### 1. 点击折叠展开功能，section里多个child不卡顿
 
 我看到大多类库是用ListView+colum(children[]) 实现的，如果section的child比较多就会出现卡顿，比如ListView+ExpansionTile
 
-2. 支持吸顶header
+#### 2. 支持吸顶header
 
 ## 导入方式
 
